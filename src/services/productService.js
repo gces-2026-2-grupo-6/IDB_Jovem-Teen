@@ -6,6 +6,7 @@ import {
   deletarProduto,
 } from "./api/produtoApi";
 import { toDriveImageUrl } from "../utils/driveImage";
+import { podeExcluirAgora, ERRO_SEM_PERMISSAO_PARA_EXCLUIR } from "./auth/permissaoAtual";
 
 function toProduct(api) {
   if (!api) return null;
@@ -89,6 +90,9 @@ export async function handleUpdateProduct(id, data) {
 }
 
 export async function handleDeleteProduct(id) {
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
   try {
     await deleteProduct(id);
     return { success: true, error: null };

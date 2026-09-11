@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { getGroupedEvents, handleDeleteEvent } from "../../../services/eventService";
+import usePermissao from "../../../hooks/usePermissao";
 import useModal from "../../../hooks/useModal";
 import SectionTitle from "../../../components/ui/SectionTitle";
 import EmptyState from "../../../components/ui/EmptyState";
@@ -11,6 +12,8 @@ import DeleteEventModal from "./components/DeleteEventModal";
 export default function AdminEventos() {
   const navigate = useNavigate();
   const deleteModal = useModal();
+  /* Excluir conteúdo é restrito ao superadministrador. */
+  const { podeExcluir } = usePermissao();
   const [events, setEvents] = useState({ proximos: [], emAndamento: [], anteriores: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +90,7 @@ export default function AdminEventos() {
                 key={event.id}
                 event={event}
                 onEdit={handleEdit}
-                onDelete={(ev) => deleteModal.open(ev)}
+                onDelete={podeExcluir ? (ev) => deleteModal.open(ev) : undefined}
               />
             ))}
           </div>
@@ -108,7 +111,7 @@ export default function AdminEventos() {
                 key={event.id}
                 event={event}
                 onEdit={handleEdit}
-                onDelete={(ev) => deleteModal.open(ev)}
+                onDelete={podeExcluir ? (ev) => deleteModal.open(ev) : undefined}
               />
             ))}
           </div>

@@ -1,18 +1,38 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, CalendarDays, Users, ShoppingCart, LogOut, X } from "lucide-react";
+import { Home, CalendarDays, Users, Mic, ShoppingCart, ShieldCheck, LogOut, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import usePermissao from "../../../hooks/usePermissao";
+import { SETOR } from "../../../utils/permissoes";
 const logoSvg = "/logo.svg";
 
+/* Cada item declara o setor que o libera. `setor: null` aparece para qualquer
+   administrador; `somenteSuperadmin` aparece só para o superadministrador. */
 const sidebarLinks = [
-  { label: "Home", path: "/admin", icon: Home },
-  { label: "Eventos", path: "/admin/eventos", icon: CalendarDays },
-  { label: "Voluntários", path: "/admin/voluntarios", icon: Users },
-  { label: "Produtos", path: "/admin/produtos", icon: ShoppingCart },
+  { label: "Home", path: "/admin", icon: Home, setor: null },
+  { label: "Eventos", path: "/admin/eventos", icon: CalendarDays, setor: SETOR.EVENTOS },
+  { label: "Convidados", path: "/admin/palestrantes", icon: Mic, setor: SETOR.EVENTOS },
+  { label: "Voluntários", path: "/admin/voluntarios", icon: Users, setor: SETOR.INSCRICOES },
+  { label: "Produtos", path: "/admin/produtos", icon: ShoppingCart, setor: SETOR.PRODUTOS },
+  {
+    label: "Administradores",
+    path: "/admin/administradores",
+    icon: ShieldCheck,
+    setor: null,
+    somenteSuperadmin: true,
+  },
 ];
 
 export default function AdminSidebar({ isOpen, onClose }) {
   const { logout } = useAuth();
+  const { administra, ehSuperadmin } = usePermissao();
   const navigate = useNavigate();
+
+  /* O menu não oferece o que a pessoa não pode abrir — sem isso ela clicaria
+     para receber uma tela de acesso negado. */
+  const linksVisiveis = sidebarLinks.filter((item) => {
+    if (item.somenteSuperadmin) return ehSuperadmin;
+    return !item.setor || administra(item.setor);
+  });
 
   const handleLogout = () => {
     logout();
@@ -58,7 +78,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
         {/* links do menu */}
         <nav className="flex-1 flex flex-col gap-1 px-3">
-          {sidebarLinks.map((item) => (
+          {linksVisiveis.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

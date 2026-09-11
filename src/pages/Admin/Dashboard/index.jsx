@@ -8,8 +8,11 @@ import CalendarMini from "./components/CalendarMini";
 import EmptyState from "../../../components/ui/EmptyState";
 import { fetchAllEvents, getEventStatus, extractDayMonth } from "../../../services/eventService";
 import { fetchAllProducts } from "../../../services/productService";
+import usePermissao from "../../../hooks/usePermissao";
+import { SETOR } from "../../../utils/permissoes";
 
 function DashboardEventRow({ event, isPast = false }) {
+  const { administra } = usePermissao();
   const { day, month } = event.day && event.month ? event : extractDayMonth(event.date);
 
   return (
@@ -36,12 +39,14 @@ function DashboardEventRow({ event, isPast = false }) {
         >
           Detalhes
         </Link>
-        <Link
-          to={`/admin/voluntarios`}
-          className="text-[10px] font-bold border border-[#1E1E1E]/20 text-[#1E1E1E]/70 px-3 py-1 rounded-md hover:border-[#FF6D2C] hover:text-[#FF6D2C] transition-colors text-center"
-        >
-          {isPast ? "Voluntários" : "Gerenciar Voluntários"}
-        </Link>
+        {administra(SETOR.INSCRICOES) && (
+          <Link
+            to={`/admin/voluntarios`}
+            className="text-[10px] font-bold border border-[#1E1E1E]/20 text-[#1E1E1E]/70 px-3 py-1 rounded-md hover:border-[#FF6D2C] hover:text-[#FF6D2C] transition-colors text-center"
+          >
+            {isPast ? "Voluntários" : "Gerenciar Voluntários"}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -57,6 +62,10 @@ function byDateDesc(a, b) {
 
 // tela principal do admin
 export default function AdminDashboard() {
+  const { administra } = usePermissao();
+  const veEventos = administra(SETOR.EVENTOS);
+  const veProdutos = administra(SETOR.PRODUTOS);
+
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [ongoingEvents, setOngoingEvents] = useState([]);
   const [pastEvents, setPastEvents] = useState([]);
@@ -72,7 +81,12 @@ export default function AdminDashboard() {
       setError(null);
 
       try {
-        const [allEvents, allProducts] = await Promise.all([fetchAllEvents(), fetchAllProducts()]);
+        /* Não busca o que a pessoa não pode ver: além de poupar a requisição,
+           evita um erro de permissão da API virar erro na tela inteira. */
+        const [allEvents, allProducts] = await Promise.all([
+          veEventos ? fetchAllEvents() : Promise.resolve([]),
+          veProdutos ? fetchAllProducts() : Promise.resolve([]),
+        ]);
 
         if (!active) return;
 
@@ -112,7 +126,7 @@ export default function AdminDashboard() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [veEventos, veProdutos]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -123,8 +137,14 @@ export default function AdminDashboard() {
 
       {error && <EmptyState message={error} className="border-red-100 bg-red-50/60 text-red-700" />}
 
+      {/* Quem não administra eventos nem produtos não tem o que ver aqui —
+          o painel resume esses dois setores. */}
+      {!veEventos && !veProdutos && (
+        <EmptyState message="Use o menu ao lado para acessar os setores que você administra." />
+      )}
+
       {/* eventos em andamento (só aparece quando há algum acontecendo) */}
-      {!loading && ongoingEvents.length > 0 && (
+      {veEventos && !loading && ongoingEvents.length > 0 && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-[#1E1E1E] text-lg">Eventos em Andamento</h2>
@@ -144,6 +164,7 @@ export default function AdminDashboard() {
       )}
 
       {/* linha de eventos */}
+      {veEventos && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* próximos eventos */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -193,13 +214,15 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      )}
 
       {/* linha do caledário e produtos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* calendário */}
-        <CalendarMini />
+        {/* calendário — é a agenda de eventos */}
+        {veEventos && <CalendarMini />}
 
         {/* lista de produtos */}
+        {veProdutos && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-[#1E1E1E] text-lg">Produtos Cadastrados</h2>
@@ -222,6 +245,7 @@ export default function AdminDashboard() {
             <EmptyState message="Nenhum produto cadastrado." className="border-none shadow-none p-0 bg-transparent" />
           )}
         </div>
+        )}
       </div>
     </div>
   );

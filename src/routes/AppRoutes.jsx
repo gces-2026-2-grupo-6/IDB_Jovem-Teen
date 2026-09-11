@@ -6,6 +6,8 @@ import AdminLayout from "../layouts/AdminLayout";
 
 import AdminRoute from "./AdminRoute";
 import SuperAdminRoute from "./SuperAdminRoute";
+import SetorRoute from "./SetorRoute";
+import { SETOR } from "../utils/permissoes";
 
 import Home from "../pages/Home";
 import Eventos from "../pages/Eventos";
@@ -23,11 +25,16 @@ import AdminEventoCreate from "../pages/Admin/Eventos/Create";
 import AdminEventoDetails from "../pages/Admin/Eventos/Details";
 import AdminEventoEdit from "../pages/Admin/Eventos/Edit";
 import AdminEventoEditSchedule from "../pages/Admin/Eventos/EditSchedule";
+import AdminPalestrantes from "../pages/Admin/Palestrantes";
+import AdminPalestranteCreate from "../pages/Admin/Palestrantes/Create";
+import AdminPalestranteEdit from "../pages/Admin/Palestrantes/Edit";
 import AdminProdutos from "../pages/Admin/Produtos";
 import AdminProdutoCreate from "../pages/Admin/Produtos/Create";
 import AdminProdutoEdit from "../pages/Admin/Produtos/Edit";
 import AdminVoluntarios from "../pages/Admin/Voluntarios";
 import AdminVoluntarioDetails from "../pages/Admin/Voluntarios/Details";
+import AdminAdministradores from "../pages/Admin/Administradores";
+import AdminAdministradorCreate from "../pages/Admin/Administradores/Create";
 
 export default function AppRoutes() {
   return (
@@ -35,18 +42,44 @@ export default function AppRoutes() {
       <Route element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/eventos" element={<AdminEventos />} />
-          <Route path="/admin/eventos/criar" element={<AdminEventoCreate />} />
-          <Route path="/admin/eventos/:id" element={<AdminEventoDetails />} />
-          <Route path="/admin/eventos/:id/editar" element={<AdminEventoEdit />} />
-          <Route path="/admin/eventos/:id/programacao" element={<AdminEventoEditSchedule />} />
-          <Route path="/admin/produtos" element={<AdminProdutos />} />
-          <Route element={<SuperAdminRoute />}>
+
+          {/* Setor Agenda e Eventos */}
+          <Route element={<SetorRoute setor={SETOR.EVENTOS} />}>
+            <Route path="/admin/eventos" element={<AdminEventos />} />
+            <Route path="/admin/eventos/criar" element={<AdminEventoCreate />} />
+            <Route path="/admin/eventos/:id" element={<AdminEventoDetails />} />
+            <Route path="/admin/eventos/:id/editar" element={<AdminEventoEdit />} />
+            <Route path="/admin/eventos/:id/programacao" element={<AdminEventoEditSchedule />} />
+
+            {/* Convidados pertencem ao setor da agenda: quem monta o evento é
+                quem cadastra quem vai nele. */}
+            <Route path="/admin/palestrantes" element={<AdminPalestrantes />} />
+            <Route path="/admin/palestrantes/criar" element={<AdminPalestranteCreate />} />
+            <Route path="/admin/palestrantes/:id/editar" element={<AdminPalestranteEdit />} />
+          </Route>
+
+          {/* Setor Loja e Produtos — criar e editar pertencem ao setor, não ao
+              superadministrador: o critério restringe ao superadmin apenas a
+              exclusão. Antes estas duas rotas exigiam superadmin, o que
+              impediria o administrador da loja de cadastrar produto. */}
+          <Route element={<SetorRoute setor={SETOR.PRODUTOS} />}>
+            <Route path="/admin/produtos" element={<AdminProdutos />} />
             <Route path="/admin/produtos/criar" element={<AdminProdutoCreate />} />
             <Route path="/admin/produtos/:id/editar" element={<AdminProdutoEdit />} />
           </Route>
-          <Route path="/admin/voluntarios" element={<AdminVoluntarios />} />
-          <Route path="/admin/voluntarios/:eventId" element={<AdminVoluntarioDetails />} />
+
+          {/* Setor Inscrições — no sistema, a tela que gerencia inscrições é a
+              de voluntários. */}
+          <Route element={<SetorRoute setor={SETOR.INSCRICOES} />}>
+            <Route path="/admin/voluntarios" element={<AdminVoluntarios />} />
+            <Route path="/admin/voluntarios/:eventId" element={<AdminVoluntarioDetails />} />
+          </Route>
+
+          {/* Somente o superadministrador cria e remove administradores */}
+          <Route element={<SuperAdminRoute />}>
+            <Route path="/admin/administradores" element={<AdminAdministradores />} />
+            <Route path="/admin/administradores/criar" element={<AdminAdministradorCreate />} />
+          </Route>
         </Route>
       </Route>
 
