@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { fetchEventById, formatDate } from "../../../services/eventService";
+import ConvidadosDoEvento from "./components/ConvidadosDoEvento";
 
 
 export default function AdminEventoDetails() {
@@ -62,6 +63,8 @@ export default function AdminEventoDetails() {
           <ChevronLeft size={22} className="text-white" />
         </button>
       </div>
+
+      <ConvidadosDoEvento eventId={id} />
 
       {/* Tabela de detalhes */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

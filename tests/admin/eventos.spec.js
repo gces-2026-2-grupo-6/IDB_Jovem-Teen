@@ -44,9 +44,17 @@ test.describe('Admin - Gerenciamento de Eventos CRUD', () => {
     await page.locator('input[name="startTime"]').fill('09:00');
     await page.locator('input[name="endDay"]').fill('2029-12-31');
     await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Nome do palestrante').first().fill('Pr. Dev');
-    await page.getByPlaceholder('Nome da banda').first().fill('Banda QA');
-    await page.getByPlaceholder('Link da foto (Google Drive)').first().fill('https://drive.google.com/file/d/abc123/view');
+    /* Convidado agora é escolhido do cadastro, não digitado: a US06 trocou o
+       texto livre pela seleção, que é o que evita recadastrar a cada edição.
+       Quem ainda não existe pode ser criado sem sair do formulário. */
+    await page.getByRole('button', { name: /Cadastrar convidado novo/ }).click();
+    await page.getByLabel('Nome do novo convidado').fill('Pr. Dev');
+    await page.getByRole('button', { name: 'Cadastrar e vincular' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Remover Pr. Dev do evento' })
+    ).toBeVisible();
+
+    await page.getByPlaceholder('Cole o link da imagem (Google Drive)').fill('https://drive.google.com/file/d/abc123/view');
     await page.locator('input[name="linkFormularioVoluntarios"]').fill('https://forms.gle/teste');
 
     await page.getByRole('button', { name: 'Salvar' }).click();
