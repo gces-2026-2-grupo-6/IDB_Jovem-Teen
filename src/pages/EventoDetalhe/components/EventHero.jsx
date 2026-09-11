@@ -1,15 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Clock, CalendarDays, CalendarPlus } from "lucide-react";
-import { buildGoogleCalendarUrl, formatDate, toFormResponseUrl } from "../../../services/eventService";
+import {
+  buildGoogleCalendarUrl,
+  formatEventDates,
+  formatEventTimeLabel,
+  toFormResponseUrl,
+} from "../../../services/eventService";
 
 export default function EventHero({ event }) {
   const navigate = useNavigate();
   const googleCalendarUrl = buildGoogleCalendarUrl(event);
 
-  const startDate = formatDate(event.date);
-  const endDate = formatDate(event.endDate);
-  const dateRange =
-    endDate && endDate !== startDate ? `${startDate} - ${endDate}` : startDate;
+  const dateRange = formatEventDates(event);
+  const timeLabel = formatEventTimeLabel(event);
 
   return (
     <section className="w-full bg-[#FDF3EA]">
@@ -50,10 +53,12 @@ export default function EventHero({ event }) {
                   {dateRange}
                 </span>
               )}
-              <span className="flex items-center gap-2 text-[#1E1E1E]/70 text-sm">
-                <Clock size={16} className="text-[#1E1E1E]/50" />
-                {event.time}
-              </span>
+              {timeLabel && (
+                <span className="flex items-center gap-2 text-[#1E1E1E]/70 text-sm">
+                  <Clock size={16} className="text-[#1E1E1E]/50" />
+                  {timeLabel}
+                </span>
+              )}
             </div>
 
             {/* Adicionar ao Google Calendar do usuário */}
