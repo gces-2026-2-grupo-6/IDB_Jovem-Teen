@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars -- motion is used via <motion.div> below; core no-unused-vars doesn't track that without eslint-plugin-react
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils"

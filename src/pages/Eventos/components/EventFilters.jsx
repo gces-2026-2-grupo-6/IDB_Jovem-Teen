@@ -4,7 +4,7 @@ const tiposEvento = ["Tipo de evento", "Conferência", "Acampamento", "Campanha 
 const regioes = ["Região", "Norte", "Nordeste", "Centro-Oeste", "Sul", "Sudeste"];
 const datas = ["Data", "Esta semana", "Este mês", "Próximos 3 meses"];
 
-function FilterSelect({ id, label, options, value, onChange }) {
+function FilterSelect({ id, options, value, onChange }) {
   return (
     <div className="relative">
       <select
