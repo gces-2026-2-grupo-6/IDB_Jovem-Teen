@@ -35,8 +35,8 @@ import * as eventService from '../services/eventService';
 import * as productService from '../services/productService';
 import * as volunteerService from '../services/volunteerService';
 import * as mapaService from '../services/mapaService';
-import LiderService from '../services/liderService';
-import LiderApi from '../services/api/liderApi';
+import * as liderService from '../services/liderService';
+import * as liderApi from '../services/api/liderApi';
 import * as voluntarioApi from '../services/api/voluntarioApi';
 import * as speakerService from '../services/speakerService';
 import * as driveImage from '../utils/driveImage';
@@ -244,17 +244,26 @@ export default function TestCoverage() {
     mapaService.buscarLocais("ab");
     mapaService.buscarLocais("Recife");
 
-    LiderService.getAllLideres().catch(() => { });
-    LiderService.getLiderById(1).catch(() => { });
-    LiderService.createLider({}).catch(() => { });
-    LiderService.updateLider(1, {}).catch(() => { });
-    LiderService.deleteLider(1).catch(() => { });
+    liderService.fetchAllLeaders().catch(() => { });
+    liderService.fetchLeaderById(1).catch(() => { });
+    liderService.fetchLeaderById('invalid-id').catch(() => { });
+    liderService.handleCreateLeader({ name: '', role: '' }).catch(() => { });
+    liderService.handleCreateLeader({ name: 'L', role: '' }).catch(() => { });
+    liderService.handleCreateLeader({ name: 'L', role: 'Cargo', isPast: true, term: '2020', region: 'Nacional' }).catch(() => { });
+    liderService.handleUpdateLeader(1, { name: 'L', role: 'Cargo' }).catch(() => { });
+    liderService.handleUpdateLeader('invalid-id', { name: 'L', role: 'Cargo' }).catch(() => { });
+    liderService.handleDeleteLeader(1).catch(() => { });
+    liderService.handleDeleteLeader('invalid-id').catch(() => { });
+    liderService.isNationalLeader(null);
+    liderService.isNationalLeader({ region: 'Nacional' });
+    liderService.isNationalLeader({ role: 'Diretor Nacional' });
+    liderService.splitLeaders([]);
 
-    LiderApi.getAll().catch(() => { });
-    LiderApi.getById(1).catch(() => { });
-    LiderApi.create({}).catch(() => { });
-    LiderApi.update(1, {}).catch(() => { });
-    LiderApi.delete(1).catch(() => { });
+    liderApi.listarLideres().catch(() => { });
+    liderApi.buscarLider(1).catch(() => { });
+    liderApi.criarLider({}).catch(() => { });
+    liderApi.atualizarLider(1, {}).catch(() => { });
+    liderApi.deletarLider(1).catch(() => { });
 
     voluntarioApi.buscarVoluntario(1).catch(() => { });
     voluntarioApi.deletarVoluntario(1).catch(() => { });

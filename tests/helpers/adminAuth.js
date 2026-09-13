@@ -1,6 +1,6 @@
 const TOKEN_KEY = "idb_token";
 
-function fakeAdminToken() {
+function fakeAdminToken(roles = ["admin", "superadmin"]) {
   const base64url = (obj) =>
     Buffer.from(JSON.stringify(obj))
       .toString("base64")
@@ -14,7 +14,7 @@ function fakeAdminToken() {
     preferred_username: "idbjovem",
     email: "idbjovem@example.com",
     exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    realm_access: { roles: ["admin", "superadmin"] },
+    realm_access: { roles },
   });
 
   return `${header}.${payload}.signature`;
@@ -24,6 +24,13 @@ export async function loginAsAdmin(page) {
   await page.addInitScript(({ key, token }) => {
     window.localStorage.setItem(key, token);
   }, { key: TOKEN_KEY, token: fakeAdminToken() });
+}
+
+// Admin comum (sem o papel superadmin), p/ validar as rotas restritas ao superadmin.
+export async function loginAsPlainAdmin(page) {
+  await page.addInitScript(({ key, token }) => {
+    window.localStorage.setItem(key, token);
+  }, { key: TOKEN_KEY, token: fakeAdminToken(["admin"]) });
 }
 
 // Credenciais válidas: idbjovem/idbjovem. Qualquer outra → 401 (Keycloak

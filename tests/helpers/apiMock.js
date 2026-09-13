@@ -139,13 +139,13 @@ function makeSeed() {
         { id: "g3", nome: "foto3.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto3=w1200" },
       ],
     },
-    // Líderes (organograma da Home)
+    // Líderes (organograma da Home e CRUD do painel)
     lideres: [
-      { lider_id: 301, nome: "João Diretor", cargo: "Diretor Geral", ordem: 1, is_antigo: false, imagem_url: "" },
-      { lider_id: 302, nome: "Maria Diretora", cargo: "Vice-Diretora", ordem: 2, is_antigo: false, imagem_url: "" },
-      { lider_id: 303, nome: "Pedro Líder", cargo: "Coordenador", ordem: 3, is_antigo: false, imagem_url: "" },
-      { lider_id: 304, nome: "Antiga Diretora", cargo: "Diretora (2020)", ordem: 1, is_antigo: true, imagem_url: "" },
-      { lider_id: 305, nome: "Antigo Diretor", cargo: "Diretor (2019)", ordem: 2, is_antigo: true, imagem_url: "" },
+      { lider_id: 301, nome: "João Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 1, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider301=w1200", bio: "Bio do João.", redes_sociais: "@joao", gestao: "" },
+      { lider_id: 302, nome: "Maria Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 2, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider302=w1200", bio: "", redes_sociais: "", gestao: "" },
+      { lider_id: 303, nome: "Pedro Líder", cargo: "Diretor Regional de Jovens", regiao: "Região Sul", ordem: 3, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider303=w1200", bio: "", redes_sociais: "", gestao: "" },
+      { lider_id: 304, nome: "Antiga Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 1, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider304=w1200", bio: "", redes_sociais: "", gestao: "2020 – 2023" },
+      { lider_id: 305, nome: "Antigo Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 2, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider305=w1200", bio: "", redes_sociais: "", gestao: "2017 – 2020" },
     ],
     products: [
       {
@@ -214,6 +214,7 @@ function makeSeed() {
     nextEventId: 1000,
     nextActivityId: 2000,
     nextProductId: 3000,
+    nextLiderId: 400,
     nextSpeakerId: 500,
     nextVoluntarioId: 1000,
   };
@@ -287,13 +288,43 @@ export async function setupApiMock(page) {
       }
 
       // ---------- LIDERES ----------
-      if (path.match(/\/lider\/?$/) && method === "GET") {
-        return route.fulfill(json(db.lideres));
+      if (path.match(/\/lider\/?$/)) {
+        if (method === "GET") {
+          return route.fulfill(json(db.lideres));
+        }
+        if (method === "POST") {
+          const created = {
+            lider_id: db.nextLiderId++,
+            nome: body.nome,
+            cargo: body.cargo,
+            imagem_url: body.imagem_url || "",
+            is_antigo: !!body.is_antigo,
+            ordem: body.ordem ?? 0,
+            regiao: body.regiao || "",
+            bio: body.bio || "",
+            redes_sociais: body.redes_sociais || "",
+            gestao: body.gestao || "",
+          };
+          db.lideres.push(created);
+          return route.fulfill(json(created, 201));
+        }
       }
       let m = path.match(/\/lider\/(\d+)$/);
-      if (m && method === "GET") {
-        const lider = db.lideres.find((l) => l.lider_id === Number(m[1]));
-        return route.fulfill(lider ? json(lider) : notFound());
+      if (m) {
+        const liderId = Number(m[1]);
+        const idx = db.lideres.findIndex((l) => l.lider_id === liderId);
+        if (method === "GET") {
+          return route.fulfill(idx === -1 ? notFound() : json(db.lideres[idx]));
+        }
+        if (method === "PUT") {
+          if (idx === -1) return route.fulfill(notFound());
+          db.lideres[idx] = { ...db.lideres[idx], ...body, lider_id: liderId };
+          return route.fulfill(json(db.lideres[idx]));
+        }
+        if (method === "DELETE") {
+          if (idx !== -1) db.lideres.splice(idx, 1);
+          return route.fulfill(json({}, 204));
+        }
       }
 
       // ---------- BANDA/PALESTRANTE ----------

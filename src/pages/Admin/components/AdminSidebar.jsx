@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, CalendarDays, Users, ShoppingCart, LogOut, X } from "lucide-react";
+import { Home, CalendarDays, Users, ShoppingCart, UsersRound, LogOut, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 const logoSvg = "/logo.svg";
 
@@ -8,11 +8,13 @@ const sidebarLinks = [
   { label: "Eventos", path: "/admin/eventos", icon: CalendarDays },
   { label: "Voluntários", path: "/admin/voluntarios", icon: Users },
   { label: "Produtos", path: "/admin/produtos", icon: ShoppingCart },
+  { label: "Diretores & Líderes", path: "/admin/lideres", icon: UsersRound, superAdminOnly: true },
 ];
 
 export default function AdminSidebar({ isOpen, onClose }) {
-  const { logout } = useAuth();
+  const { logout, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
+  const links = sidebarLinks.filter((item) => !item.superAdminOnly || isSuperAdmin);
 
   const handleLogout = () => {
     logout();
@@ -58,7 +60,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
         {/* links do menu */}
         <nav className="flex-1 flex flex-col gap-1 px-3">
-          {sidebarLinks.map((item) => (
+          {links.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

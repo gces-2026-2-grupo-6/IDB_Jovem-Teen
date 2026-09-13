@@ -1,110 +1,62 @@
 import { useState, useEffect } from "react";
-import LiderService from "../../../services/liderService";
-
-const STATIC_CURRENT_LEADERS = [
-  {
-    lider_id: 'static_1',
-    nome: 'Bp. Samuel Tavares',
-    cargo: 'Diretor Nacional e Regional de Jovens Região Central',
-    imagem_url: '/prSamuel.jpeg',
-    is_antigo: false,
-    ordem: 1,
-  },
-  {
-    lider_id: 'static_2',
-    nome: 'Pra. Raquel Gomes',
-    cargo: 'Diretora Nacional e Regional de Adolescentes Região Central',
-    imagem_url: '/praRaquel.jpeg',
-    is_antigo: false,
-    ordem: 2,
-  },
-  {
-    lider_id: 'static_3',
-    nome: 'Pra. Mariley Ribeiro',
-    cargo: 'Diretora Regional de jovens e adolescentes Região centro oeste',
-    imagem_url: '/praMariley.jpeg',
-    is_antigo: false,
-    ordem: 3,
-  },
-  {
-    lider_id: 'static_4',
-    nome: 'Pr. Silvio Modesto',
-    cargo: 'Diretor regional de jovens e adolescentes Região sul',
-    imagem_url: '/prSilvio.jpeg',
-    is_antigo: false,
-    ordem: 4,
-  },
-  {
-    lider_id: 'static_5',
-    nome: 'Pr. Darlan Soares',
-    cargo: 'Diretor regional de jovens e adolescentes Região Nordeste',
-    imagem_url: '/prDarlan.jpeg',
-    is_antigo: false,
-    ordem: 5,
-  },
-  {
-    lider_id: 'static_6',
-    nome: 'Pr. Bill Watson',
-    cargo: 'Diretor regional de jovens e adolescentes Região Norte',
-    imagem_url: '/prBill.jpeg',
-    is_antigo: false,
-    ordem: 6,
-  },
-  {
-    lider_id: 'static_7',
-    nome: 'Pr. Áquila Olivera',
-    cargo: 'Diretor regional de jovens e adolescentes Região sudeste',
-    imagem_url: '/prAquila.jpeg',
-    is_antigo: false,
-    ordem: 7,
-  }
-];
+import { fetchAllLeaders, splitLeaders } from "../../../services/liderService";
 
 function LeaderCard({ leader, isPast }) {
   return (
     <div className="flex flex-col items-center">
       <div className={`w-[120px] h-[120px] md:w-[150px] md:h-[150px] rounded-2xl mb-4 overflow-hidden ${isPast ? 'bg-[#D2691E]' : 'bg-[#E85A1B]'}`}>
-        {leader.imagem_url ? (
-          <img src={leader.imagem_url} alt={leader.nome} className="w-full h-full object-cover" />
+        {leader.image ? (
+          <img src={leader.image} alt={leader.name} className="w-full h-full object-cover" />
         ) : null}
       </div>
       <h4 className={`font-handwriting text-2xl leading-none text-center ${isPast ? 'text-white' : 'text-black'}`}>
-        {leader.nome}
+        {leader.name}
       </h4>
       <p className={`text-xs md:text-sm text-center font-semibold mt-1 max-w-[140px] leading-tight ${isPast ? 'text-white/80' : 'text-[#D5650D]'}`}>
-        {leader.cargo}
+        {leader.role}
       </p>
+      {isPast && leader.term && (
+        <p className="text-[11px] md:text-xs text-center text-white/60 mt-1">Gestão {leader.term}</p>
+      )}
+    </div>
+  );
+}
+
+function EmptyMessage({ title, text }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 relative z-10">
+      <h3 className="text-white text-4xl md:text-5xl font-handwriting tracking-wider opacity-90">{title}</h3>
+      <p className="text-white/80 mt-4 text-center max-w-md font-medium">{text}</p>
     </div>
   );
 }
 
 export default function LideresSection() {
   const [showPast, setShowPast] = useState(false);
-  const [lideres, setLideres] = useState([]);
+  const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    LiderService.getAllLideres()
-      .then((data) => {
-        // Ensure they are ordered by "ordem"
-        const sorted = data.sort((a, b) => a.ordem - b.ordem);
-        setLideres(sorted);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    let active = true;
+    fetchAllLeaders()
+      .then((data) => active && setLeaders(data))
+      .catch(() => active && setLeaders([]))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const currentLeaders = STATIC_CURRENT_LEADERS;
-  const pastLeaders = lideres.filter(l => l.is_antigo);
+  const { current: currentLeaders, past: pastLeaders } = splitLeaders(leaders);
 
-  // Divide into directors (first 2) and others (the rest) based on sorted order
+  // Diretores nacionais (2 primeiros) em destaque; demais líderes abaixo
   const currentDirectors = currentLeaders.slice(0, 2);
   const currentOthers = currentLeaders.slice(2);
 
   const pastDirectors = pastLeaders.slice(0, 2);
   const pastOthers = pastLeaders.slice(2);
 
-  if (loading) return null; // or a loading spinner
+  if (loading) return null;
 
   return (
     <section className="w-full py-16 md:py-24 px-4 bg-[#D5650D]">
@@ -131,34 +83,41 @@ export default function LideresSection() {
 
         {showPast ? (
           pastLeaders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 relative z-10">
-              <h3 className="text-white text-4xl md:text-5xl font-handwriting tracking-wider opacity-90">Em construção...</h3>
-              <p className="text-white/80 mt-4 text-center max-w-md font-medium">Em breve você poderá conhecer nossa galeria de diretores anteriores aqui.</p>
-            </div>
+            <EmptyMessage
+              title="Em construção..."
+              text="Em breve você poderá conhecer nossa galeria de diretores anteriores aqui."
+            />
           ) : (
             <div className="flex flex-col items-center gap-12 relative z-10">
               <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-                {pastDirectors.map(leader => <LeaderCard key={leader.lider_id} leader={leader} isPast />)}
+                {pastDirectors.map(leader => <LeaderCard key={leader.id} leader={leader} isPast />)}
               </div>
               <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-                {pastOthers.map(leader => <LeaderCard key={leader.lider_id} leader={leader} isPast />)}
+                {pastOthers.map(leader => <LeaderCard key={leader.id} leader={leader} isPast />)}
               </div>
             </div>
           )
+        ) : currentLeaders.length === 0 ? (
+          <EmptyMessage
+            title="Em breve..."
+            text="Nossos líderes serão apresentados aqui assim que forem cadastrados."
+          />
         ) : (
           <div className="flex flex-col items-center relative z-10">
             {/* Container principal */}
             <div className="bg-[#FFFDF9] rounded-[2.5rem] p-8 md:p-12 shadow-sm flex flex-col items-center max-w-[800px] w-full">
               <div className="flex flex-wrap justify-center gap-8 md:gap-24 mb-12">
-                {currentDirectors.map(leader => <LeaderCard key={leader.lider_id} leader={leader} />)}
+                {currentDirectors.map(leader => <LeaderCard key={leader.id} leader={leader} />)}
               </div>
             </div>
             {/* Container secundário */}
-            <div className="bg-[#FFFDF9] rounded-[2.5rem] p-8 md:p-12 shadow-sm flex flex-col items-center w-full max-w-full -mt-8 pt-16">
-              <div className="flex flex-wrap justify-center gap-4 md:gap-8">
-                {currentOthers.map(leader => <LeaderCard key={leader.lider_id} leader={leader} />)}
+            {currentOthers.length > 0 && (
+              <div className="bg-[#FFFDF9] rounded-[2.5rem] p-8 md:p-12 shadow-sm flex flex-col items-center w-full max-w-full -mt-8 pt-16">
+                <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+                  {currentOthers.map(leader => <LeaderCard key={leader.id} leader={leader} />)}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
