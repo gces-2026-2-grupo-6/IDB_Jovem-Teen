@@ -35,6 +35,9 @@ import AdminVoluntarios from "../pages/Admin/Voluntarios";
 import AdminVoluntarioDetails from "../pages/Admin/Voluntarios/Details";
 import AdminAdministradores from "../pages/Admin/Administradores";
 import AdminAdministradorCreate from "../pages/Admin/Administradores/Create";
+import AdminLideres from "../pages/Admin/Lideres";
+import AdminLiderCreate from "../pages/Admin/Lideres/Create";
+import AdminLiderEdit from "../pages/Admin/Lideres/Edit";
 
 export default function AppRoutes() {
   return (
@@ -75,10 +78,14 @@ export default function AppRoutes() {
             <Route path="/admin/voluntarios/:eventId" element={<AdminVoluntarioDetails />} />
           </Route>
 
-          {/* Somente o superadministrador cria e remove administradores */}
+          {/* Restrito ao superadministrador: gestão de administradores e a
+              galeria de diretores e líderes, que veio da US05. */}
           <Route element={<SuperAdminRoute />}>
             <Route path="/admin/administradores" element={<AdminAdministradores />} />
             <Route path="/admin/administradores/criar" element={<AdminAdministradorCreate />} />
+            <Route path="/admin/lideres" element={<AdminLideres />} />
+            <Route path="/admin/lideres/criar" element={<AdminLiderCreate />} />
+            <Route path="/admin/lideres/:id/editar" element={<AdminLiderEdit />} />
           </Route>
         </Route>
       </Route>

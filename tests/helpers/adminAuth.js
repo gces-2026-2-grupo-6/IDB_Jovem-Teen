@@ -27,6 +27,13 @@ export async function loginAsAdmin(page) {
   }, { key: TOKEN_KEY, token: fakeAdminToken() });
 }
 
+// Admin comum (sem o papel superadmin), p/ validar as rotas restritas ao superadmin.
+export async function loginAsPlainAdmin(page) {
+  await page.addInitScript(({ key, token }) => {
+    window.localStorage.setItem(key, token);
+  }, { key: TOKEN_KEY, token: fakeAdminToken(["admin"]) });
+}
+
 /* Entra no painel com um conjunto específico de papéis do Keycloak, para
    exercitar a matriz de permissão da US03:
 

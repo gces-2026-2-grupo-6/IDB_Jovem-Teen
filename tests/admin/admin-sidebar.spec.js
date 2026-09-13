@@ -28,6 +28,8 @@ test.describe('Admin Sidebar e Navegação', () => {
     await expect(sidebar.getByRole('link', { name: /Eventos/i })).toBeVisible();
     await expect(sidebar.getByRole('link', { name: /Voluntários/i })).toBeVisible();
     await expect(sidebar.getByRole('link', { name: /Produtos/i })).toBeVisible();
+    // o token do helper é superadmin, então vê Diretores & Líderes
+    await expect(sidebar.getByRole('link', { name: /Diretores & Líderes/i })).toBeVisible();
   });
 
   test('deve realizar logout ao clicar no botão Sair', async ({ page }) => {
