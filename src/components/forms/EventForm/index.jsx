@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, CalendarDays, CalendarRange, Users, Music, CalendarCog, ImagePlus, Plus, Trash2 } from "lucide-react";
+import {
+  MapPin,
+  CalendarDays,
+  CalendarRange,
+  Users,
+  Music,
+  CalendarCog,
+  ImagePlus,
+  Plus,
+  Trash2,
+  Ticket,
+  Phone,
+  DollarSign,
+  Link2,
+  FileText,
+} from "lucide-react";
 import LocationPicker from "./LocationPicker";
 import ConvidadosPicker from "./ConvidadosPicker";
 import TimeInput from "../../ui/TimeInput";
@@ -18,9 +33,6 @@ const inputClass =
 /* Base sem w-full para os campos de data/hora (largura controlada via flex) */
 const dateTimeBase =
   "border border-gray-300 rounded-lg px-3 py-3 bg-[#FFF8F3] text-sm text-[#1E1E1E] focus:border-[#FF6D2C] focus:ring-2 focus:ring-[#FF6D2C]/20 transition-all";
-
-
-
 
 export default function EventForm({ initialData = {}, onSubmit, eventId }) {
   const navigate = useNavigate();
@@ -43,6 +55,11 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     title: initialData.title || "",
     tipoEvento: initialData.tipoEvento || "",
     description: initialData.description || "",
+    vagas: initialData.vagas ?? "",
+    contatoResponsavel: initialData.contatoResponsavel || "",
+    valorInvestimento: initialData.valorInvestimento || "",
+    linkPagamento: initialData.linkPagamento || "",
+    linkRegulamento: initialData.linkRegulamento || "",
     latitude: initialData.latitude ?? "",
     longitude: initialData.longitude ?? "",
     startDay: start.day,
@@ -168,6 +185,75 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
             rows={3}
             className={`${inputClass} resize-none`}
           />
+        </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {/* Vagas + Contato do responsável (RF11) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-1">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+              <Ticket size={16} className="text-[#FF6D2C]" />
+              Quantidade de vagas
+            </label>
+            <input
+              type="number"
+              name="vagas"
+              min="0"
+              value={form.vagas}
+              onChange={handleChange}
+              placeholder="Ex: 50"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+              <Phone size={16} className="text-[#FF6D2C]" />
+              Contato do responsável
+            </label>
+            <input
+              type="text"
+              name="contatoResponsavel"
+              value={form.contatoResponsavel}
+              onChange={handleChange}
+              placeholder="Telefone ou e-mail"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {/* Valor/Investimento + Link de pagamento (RF11) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-1">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+              <DollarSign size={16} className="text-[#FF6D2C]" />
+              Valor / Investimento
+            </label>
+            <input
+              type="text"
+              name="valorInvestimento"
+              value={form.valorInvestimento}
+              onChange={handleChange}
+              placeholder="Ex: R$ 30,00 ou Gratuito"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+              <Link2 size={16} className="text-[#FF6D2C]" />
+              Link de pagamento
+            </label>
+            <input
+              type="url"
+              name="linkPagamento"
+              value={form.linkPagamento}
+              onChange={handleChange}
+              placeholder="https://..."
+              className={inputClass}
+            />
+          </div>
         </div>
 
         <hr className="my-5 border-gray-100" />
@@ -354,7 +440,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         <hr className="my-5 border-gray-100" />
 
-        {/* Palestrantes — cada palestrante tem nome e a sua própria foto (link do Drive) */}
+        {/* Palestrantes/convidados — selecionados via ConvidadosPicker */}
         <ConvidadosPicker
           eventId={eventId}
           selecionados={convidadosIds ?? []}
@@ -425,6 +511,27 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
           </div>
           <p className="mt-1.5 text-xs text-[#1E1E1E]/50">
             Informe o nome (ou link) da pasta onde estão as fotos do evento.
+          </p>
+        </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {/* Regulamento (RF11) — mesmo padrão de link usado na capa e na galeria */}
+        <div className="mb-1">
+          <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+            <FileText size={16} className="text-[#FF6D2C]" />
+            Regulamento (PDF)
+          </label>
+          <input
+            type="url"
+            name="linkRegulamento"
+            value={form.linkRegulamento}
+            onChange={handleChange}
+            placeholder="Cole o link do PDF (Google Drive)"
+            className={inputClass}
+          />
+          <p className="mt-1.5 text-xs text-[#1E1E1E]/50">
+            Compartilhe o PDF no Drive como "qualquer pessoa com o link" e cole aqui.
           </p>
         </div>
 
