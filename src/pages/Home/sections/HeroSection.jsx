@@ -28,6 +28,7 @@ export default function HeroSection({ countdown, nextEvent }) {
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 w-full max-w-5xl mx-auto py-8">
         {/* Título principal */}
         <h1
+          translate="no"
           className="text-white font-black uppercase leading-none tracking-tight"
           style={{
             fontSize: "clamp(2.8rem, 10vw, 8rem)",

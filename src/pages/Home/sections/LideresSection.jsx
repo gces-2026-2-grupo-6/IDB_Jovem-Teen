@@ -9,7 +9,7 @@ function LeaderCard({ leader, isPast }) {
           <img src={leader.image} alt={leader.name} className="w-full h-full object-cover" />
         ) : null}
       </div>
-      <h4 className={`font-handwriting text-2xl leading-none text-center ${isPast ? 'text-white' : 'text-black'}`}>
+      <h4 translate="no" className={`font-handwriting text-2xl leading-none text-center ${isPast ? 'text-white' : 'text-black'}`}>
         {leader.name}
       </h4>
       <p className={`text-xs md:text-sm text-center font-semibold mt-1 max-w-[140px] leading-tight ${isPast ? 'text-white/80' : 'text-[#D5650D]'}`}>

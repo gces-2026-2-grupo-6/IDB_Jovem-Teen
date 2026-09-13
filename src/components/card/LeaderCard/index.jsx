@@ -47,7 +47,7 @@ export default function LeaderCard({ leader, onEdit, onDelete }) {
 
       {/* Info */}
       <div className="flex flex-col gap-1 min-w-0">
-        <h3 className="font-bold text-lg text-[#1E1E1E] leading-tight truncate">{leader.name}</h3>
+        <h3 translate="no" className="font-bold text-lg text-[#1E1E1E] leading-tight truncate">{leader.name}</h3>
         <p className="text-sm font-medium text-[#1E1E1E]/70 leading-snug">{leader.role}</p>
         {detail && <p className="text-xs text-[#1E1E1E]/50">{detail}</p>}
       </div>
