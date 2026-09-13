@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { fetchEventById, formatDate } from "../../../services/eventService";
+import ConvidadosDoEvento from "./components/ConvidadosDoEvento";
 
 
 export default function AdminEventoDetails() {
@@ -63,6 +64,8 @@ export default function AdminEventoDetails() {
         </button>
       </div>
 
+      <ConvidadosDoEvento eventId={id} />
+
       {/* Tabela de detalhes */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">
@@ -113,26 +116,6 @@ export default function AdminEventoDetails() {
               </td>
               <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
                 {formatDate(event.date)}
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100">
-              <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
-                Palestrantes
-              </td>
-              <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
-                {(Array.isArray(event.palestrantes)
-                  ? event.palestrantes.map((p) => p.name).join(", ")
-                  : event.palestrantes) || "—"}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
-                Bandas
-              </td>
-              <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
-                {(Array.isArray(event.bandas)
-                  ? event.bandas.map((b) => b.name).join(", ")
-                  : event.bandas) || "—"}
               </td>
             </tr>
           </tbody>

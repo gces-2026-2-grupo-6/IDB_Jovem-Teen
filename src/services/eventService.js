@@ -1,7 +1,7 @@
 import { api } from "./api";
 import defaultEventImage from "../assets/images/idbJovemOne.png";
 import { toDriveImageUrl } from "../utils/driveImage";
-import { fetchSpeakers, handleCreateSpeaker, handleUpdateSpeaker } from "./speakerService";
+import { podeExcluirAgora, ERRO_SEM_PERMISSAO_PARA_EXCLUIR } from "./auth/permissaoAtual";
 
 const DEFAULT_EVENT_IMAGE = defaultEventImage;
 
@@ -23,104 +23,37 @@ export function parseEventId(slugOrId) {
   return match ? Number(match[0]) : null;
 }
 
-const pad = (n) => String(n).padStart(2, "0");
+import {
+  dateSortKey,
+  normalizeEventDays,
+  formatTime,
+  formatTimeRange,
+  extractDayMonth,
+  getEventStatus,
+  splitDateTime,
+} from "../utils/eventDates";
 
-function parseWallClock(value) {
-  if (!value) return null;
-  const m = String(value).match(
-    /(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/
-  );
-  if (!m) return null;
-  return {
-    year: Number(m[1]),
-    month: Number(m[2]),
-    day: Number(m[3]),
-    hour: m[4] ? Number(m[4]) : 0,
-    minute: m[5] ? Number(m[5]) : 0,
-  };
-}
-
-export function formatDate(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return "";
-  return `${pad(p.day)}/${pad(p.month)}/${p.year}`;
-}
-
-/* Data única para eventos de um dia; intervalo "início - fim" para eventos de vários dias. */
-export function formatDateRange(start, end) {
-  const s = formatDate(start);
-  const e = formatDate(end);
-  if (s && e && e !== s) return `${s} - ${e}`;
-  return s || e || "";
-}
-
-export function extractDayMonth(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return { day: "--", month: "---" };
-  const d = new Date(p.year, p.month - 1, p.day);
-  const month = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-  return { day: pad(p.day), month: month.charAt(0).toUpperCase() + month.slice(1) };
-}
-
-function formatTime(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return "";
-  return `${pad(p.hour)}:${pad(p.minute)}`;
-}
-
-function formatTimeRange(start, end) {
-  const s = formatTime(start);
-  const e = formatTime(end);
-  if (s && e) return `${s} - ${e}`;
-  return s || e || "";
-}
-
-export function toInputDateTime(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return "";
-  return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
-}
-
-export function splitDateTime(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return { day: "", time: "" };
-  return {
-    day: `${p.year}-${pad(p.month)}-${pad(p.day)}`,
-    time: `${pad(p.hour)}:${pad(p.minute)}`,
-  };
-}
-
-export function isFutureEvent(isoDate) {
-  const p = parseWallClock(isoDate);
-  if (!p) return false;
-  const eventDate = new Date(p.year, p.month - 1, p.day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return eventDate >= today;
-}
-
-/* Classifica o evento em relação ao dia de hoje:
-   "upcoming" ainda não começou | "ongoing" começou e não terminou | "past" já terminou. */
-export function getEventStatus(event) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = parseWallClock(event?.date);
-  const end = parseWallClock(event?.endDate || event?.date);
-  const startDate = start ? new Date(start.year, start.month - 1, start.day) : null;
-  const endDate = end ? new Date(end.year, end.month - 1, end.day) : null;
-  if (endDate && endDate < today) return "past";
-  if (startDate && startDate > today) return "upcoming";
-  return "ongoing";
-}
-
-export function isOngoingOrFuture(event) {
-  const p = parseWallClock(event?.endDate || event?.date);
-  if (!p) return false;
-  const endDate = new Date(p.year, p.month - 1, p.day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return endDate >= today;
-}
+/* Re-exportado para que as páginas sigam importando data de um lugar só. */
+export {
+  formatDate,
+  formatEventDates,
+  isNonConsecutive,
+  normalizeEventDays,
+  formatTime,
+  formatTimeRange,
+  formatDateRange,
+  dateSortKey,
+  isMultiDay,
+  eventDayKeys,
+  occursInMonth,
+  formatEventTimeLabel,
+  extractDayMonth,
+  toInputDateTime,
+  splitDateTime,
+  isFutureEvent,
+  getEventStatus,
+  isOngoingOrFuture,
+} from "../utils/eventDates";
 
 export function buildGoogleCalendarUrl(event) {
   if (!event?.date) return null;
@@ -161,6 +94,10 @@ function adaptEvent(apiEvent) {
     description: apiEvent.descricao || "",
     date: apiEvent.data_inicio,
     endDate: apiEvent.data_fim,
+    /* Dias específicos, quando o evento não é um período contínuo. Lista vazia
+       significa "usar data_inicio..data_fim". O nome do campo na API está
+       isolado aqui: se o back-end fechar com outro nome, só esta linha muda. */
+    days: normalizeEventDays(apiEvent.datas),
     time: formatTimeRange(apiEvent.data_inicio, apiEvent.data_fim),
     location: apiEvent.nome_local || "",
     latitude: apiEvent.local_latitude,
@@ -185,6 +122,7 @@ function adaptEvent(apiEvent) {
 
 function toApiEvent(form) {
   const toIso = (v) => (v ? `${v}:00`.slice(0, 19) : null);
+  const dias = normalizeEventDays(form.days);
   return {
     nome: form.title,
     tipo_evento: form.tipoEvento || null,
@@ -193,6 +131,10 @@ function toApiEvent(form) {
     local_longitude: Number(form.longitude),
     data_inicio: toIso(form.date),
     data_fim: toIso(form.endDate),
+    /* `datas` só vai preenchido quando o evento tem dias específicos. Um
+       back-end que ainda não conheça o campo o ignora, e o evento continua
+       sendo lido como o período contínuo de data_inicio a data_fim. */
+    datas: dias.length > 0 ? dias : null,
     link_galeria: form.linkGaleria || null,
     formulario_link: form.linkFormularioVoluntarios || null,
     link_imagem: (form.image && form.image.trim()) || null,
@@ -294,65 +236,82 @@ export async function getGroupedEvents() {
 
 export const TIPOS_EVENTO = ["Conferência", "Acampamento", "Campanha Nacional", "Outros"];
 
-function normalizeParticipantInput(input) {
-  if (Array.isArray(input)) {
-    return input
-      .map((p) => ({ name: (p?.name || "").trim(), image: (p?.image || "").trim() }))
-      .filter((p) => p.name);
+/* Vínculo avulso, para a tela de detalhe do evento, onde cada ação vale na
+   hora — diferente do formulário, que sincroniza tudo ao salvar. */
+export async function vincularConvidado(eventId, participanteId) {
+  const id = parseEventId(eventId);
+  try {
+    await api.post(`/evento/${id}/participantes/${participanteId}`);
+    return { success: true, error: null };
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error, "Erro ao vincular convidado.") };
   }
-  return (input || "")
-    .split(",")
-    .map((name) => ({ name: name.trim(), image: "" }))
-    .filter((p) => p.name);
 }
 
-async function syncEventSpeakers(eventId, palestrantesInput, bandasInput) {
+export async function desvincularConvidado(eventId, participanteId) {
+  const id = parseEventId(eventId);
   try {
-    const palestrantes = normalizeParticipantInput(palestrantesInput);
-    const bandas = normalizeParticipantInput(bandasInput);
-    const allNames = [...palestrantes, ...bandas].map((p) => p.name);
-
-    const { data: linkedData } = await api.get(`/evento/${eventId}/participantes`);
-    const linkedSpeakers = linkedData.map((p) => ({ id: p.participante_id, name: p.nome }));
-
-    for (const linked of linkedSpeakers) {
-      if (!allNames.find((n) => n.toLowerCase() === linked.name.toLowerCase())) {
-        await api.delete(`/evento/${eventId}/participantes/${linked.id}`).catch(() => { });
-      }
-    }
-
-    if (allNames.length === 0) return;
-
-    const allSpeakers = await fetchSpeakers().catch(() => []);
-
-    const sync = async (participants, role) => {
-      for (const item of participants) {
-        let speaker = allSpeakers.find((s) => s.name.toLowerCase() === item.name.toLowerCase());
-
-        if (!speaker) {
-          const res = await handleCreateSpeaker({ name: item.name, role, image: item.image });
-          if (res.success) speaker = res.speaker;
-        } else if (item.image && item.image !== speaker.photoLink) {
-          // participante já existe e a foto mudou → atualiza o link da foto
-          const res = await handleUpdateSpeaker(speaker.id, {
-            name: speaker.name,
-            role: speaker.role || role,
-            image: item.image,
-          });
-          if (res.success) speaker = res.speaker;
-        }
-
-        if (speaker && !linkedSpeakers.find((s) => s.id === speaker.id)) {
-          await api.post(`/evento/${eventId}/participantes/${speaker.id}`).catch(() => { });
-        }
-      }
-    };
-
-    await sync(palestrantes, "Palestrante");
-    await sync(bandas, "Banda");
-  } catch (err) {
-    console.error("Erro ao sincronizar participantes:", err);
+    await api.delete(`/evento/${id}/participantes/${participanteId}`);
+    return { success: true, error: null };
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error, "Erro ao remover convidado.") };
   }
+}
+
+/* Sincroniza os convidados do evento a partir dos ids escolhidos.
+
+   A versão anterior recebia nomes digitados e casava convidado por string em
+   minúsculas. Isso quebrava de dois jeitos: dois convidados de mesmo nome
+   viravam um só, e corrigir a grafia de um nome criava um convidado novo em vez
+   de atualizar o existente — exatamente o recadastro que a história quer
+   eliminar. Agora o vínculo é por id, então nada depende de como o nome foi
+   escrito. */
+async function syncEventSpeakers(eventId, convidadosIds) {
+  if (!Array.isArray(convidadosIds)) return;
+
+  try {
+    const desejados = [...new Set(convidadosIds.filter((id) => id != null))];
+
+    const { data: vinculados } = await api.get(`/evento/${eventId}/participantes`);
+    const atuais = vinculados.map((p) => p.participante_id);
+
+    const remover = atuais.filter((id) => !desejados.includes(id));
+    const adicionar = desejados.filter((id) => !atuais.includes(id));
+
+    await Promise.all([
+      ...remover.map((id) =>
+        api.delete(`/evento/${eventId}/participantes/${id}`).catch(() => {})
+      ),
+      ...adicionar.map((id) =>
+        api.post(`/evento/${eventId}/participantes/${id}`).catch(() => {})
+      ),
+    ]);
+  } catch (err) {
+    console.error("Erro ao sincronizar convidados:", err);
+  }
+}
+
+/* Validações de data comuns à criação e à edição. Devolve a mensagem de erro
+   ou null quando está tudo certo. */
+function validateEventDates(data) {
+  const dias = normalizeEventDays(data.days);
+
+  if (dias.length > 0 && (!data.date || !data.endDate)) {
+    return "Informe o horário de início e de término dos dias selecionados.";
+  }
+  if (dias.length === 0 && (!data.date || !data.endDate)) {
+    return "Datas de início e término são obrigatórias.";
+  }
+
+  /* O término tem de ser estritamente depois do início — a API recusa os dois
+     iguais ("o valor final deve ser maior que o valor inicial"), e o formulário
+     de atividades já adota a mesma regra. Validar aqui evita uma ida ao
+     servidor para receber a recusa. Em dias avulsos a comparação continua
+     valendo, porque início e término derivam do primeiro e do último dia. */
+  if (dateSortKey(data.endDate) <= dateSortKey(data.date)) {
+    return "O término do evento deve ser depois do início.";
+  }
+  return null;
 }
 
 export async function handleCreateEvent(data) {
@@ -362,8 +321,9 @@ export async function handleCreateEvent(data) {
   if (!TIPOS_EVENTO.includes(data.tipoEvento)) {
     return { success: false, error: "Selecione o tipo de evento." };
   }
-  if (!data.date || !data.endDate) {
-    return { success: false, error: "Datas de início e término são obrigatórias." };
+  const erroDeData = validateEventDates(data);
+  if (erroDeData) {
+    return { success: false, error: erroDeData };
   }
   if (data.latitude === "" || data.longitude === "" || data.latitude == null || data.longitude == null) {
     return { success: false, error: "Latitude e longitude são obrigatórias." };
@@ -371,7 +331,7 @@ export async function handleCreateEvent(data) {
   try {
     const { data: created } = await api.post("/evento/", toApiEvent(data));
     const newEvent = adaptEvent(created);
-    await syncEventSpeakers(newEvent.id, data.palestrantes, data.bandas);
+    await syncEventSpeakers(newEvent.id, data.convidadosIds);
     return { success: true, event: newEvent };
   } catch (error) {
     return { success: false, error: getErrorMessage(error, "Erro ao criar evento.") };
@@ -385,11 +345,15 @@ export async function handleUpdateEvent(slugOrId, data) {
   if (!TIPOS_EVENTO.includes(data.tipoEvento)) {
     return { success: false, error: "Selecione o tipo de evento." };
   }
+  const erroDeData = validateEventDates(data);
+  if (erroDeData) {
+    return { success: false, error: erroDeData };
+  }
   const id = parseEventId(slugOrId);
   try {
     const { data: updated } = await api.put(`/evento/${id}`, toApiEvent(data));
     const updEvent = adaptEvent(updated);
-    await syncEventSpeakers(id, data.palestrantes, data.bandas);
+    await syncEventSpeakers(id, data.convidadosIds);
     return { success: true, event: updEvent };
   } catch (error) {
     return { success: false, error: getErrorMessage(error, "Erro ao atualizar evento.") };
@@ -397,6 +361,9 @@ export async function handleUpdateEvent(slugOrId, data) {
 }
 
 export async function handleDeleteEvent(slugOrId) {
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
   const id = parseEventId(slugOrId);
   try {
     await api.delete(`/evento/${id}`);
@@ -473,6 +440,9 @@ export async function handleUpdateActivity(activityId, data, eventDate) {
 }
 
 export async function handleDeleteActivity(activityId) {
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
   try {
     await api.delete(`/evento/atividade/${activityId}`);
     return { success: true, error: null };

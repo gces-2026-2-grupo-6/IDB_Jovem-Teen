@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, CalendarDays, Users, Music, CalendarCog, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { MapPin, CalendarDays, CalendarRange, Users, Music, CalendarCog, ImagePlus, Plus, Trash2 } from "lucide-react";
 import LocationPicker from "./LocationPicker";
+import ConvidadosPicker from "./ConvidadosPicker";
 import TimeInput from "../../ui/TimeInput";
-import { splitDateTime, TIPOS_EVENTO } from "../../../services/eventService";
+import {
+  splitDateTime,
+  isNonConsecutive,
+  normalizeEventDays,
+  TIPOS_EVENTO,
+} from "../../../services/eventService";
 import { toDriveImageUrl } from "../../../utils/driveImage";
 
 const inputClass =
@@ -13,96 +19,8 @@ const inputClass =
 const dateTimeBase =
   "border border-gray-300 rounded-lg px-3 py-3 bg-[#FFF8F3] text-sm text-[#1E1E1E] focus:border-[#FF6D2C] focus:ring-2 focus:ring-[#FF6D2C]/20 transition-all";
 
-function normalizeParticipants(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map((p) =>
-        typeof p === "string"
-          ? { name: p.trim(), image: "" }
-          : { name: (p?.name || "").trim(), image: (p?.image || "").trim() }
-      )
-      .filter((p) => p.name || p.image);
-  }
-  if (typeof value === "string" && value.trim()) {
-    return value
-      .split(",")
-      .map((name) => ({ name: name.trim(), image: "" }))
-      .filter((p) => p.name);
-  }
-  return [];
-}
 
-function withDefaultRow(rows) {
-  return rows.length > 0 ? rows : [{ name: "", image: "" }];
-}
 
-function ParticipantSection({
-  label,
-  icon,
-  namePlaceholder,
-  addTitle,
-  removeTitle,
-  helpText,
-  items,
-  onChange,
-  onAdd,
-  onRemove,
-}) {
-  return (
-    <div className="mb-1">
-      <div className="flex items-center justify-between mb-2">
-        <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E]">
-          {icon}
-          {label}
-        </label>
-        <button
-          type="button"
-          onClick={onAdd}
-          title={addTitle}
-          className="flex items-center gap-1.5 text-sm font-semibold text-[#FF6D2C] hover:text-[#e65c18] transition-colors"
-        >
-          <Plus size={18} />
-          Adicionar
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <div key={index} className="flex flex-col sm:flex-row gap-2 sm:items-start">
-            <input
-              type="text"
-              value={item.name}
-              onChange={(e) => onChange(index, "name", e.target.value)}
-              placeholder={namePlaceholder}
-              className={`${inputClass} sm:flex-1`}
-            />
-            <div className="flex gap-2 sm:flex-1">
-              <div className="relative flex-1">
-                <input
-                  type="url"
-                  value={item.image}
-                  onChange={(e) => onChange(index, "image", e.target.value)}
-                  placeholder="Link da foto (Google Drive)"
-                  className={`${inputClass} pr-10`}
-                />
-                <ImagePlus size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1E1E1E]/30" />
-              </div>
-              <button
-                type="button"
-                onClick={() => onRemove(index)}
-                title={removeTitle}
-                className="shrink-0 w-11 flex items-center justify-center rounded-lg border border-gray-300 text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {helpText && <p className="mt-1.5 text-xs text-[#1E1E1E]/50">{helpText}</p>}
-    </div>
-  );
-}
 
 export default function EventForm({ initialData = {}, onSubmit, eventId }) {
   const navigate = useNavigate();
@@ -110,6 +28,16 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
   const start = splitDateTime(initialData.date);
   const end = splitDateTime(initialData.endDate);
+
+  /* O evento entra em "dias" quando já foi salvo com dias avulsos; o padrão
+     segue sendo o período contínuo. */
+  const diasIniciais = normalizeEventDays(initialData.days);
+  const [dateMode, setDateMode] = useState(
+    isNonConsecutive({ days: diasIniciais }) ? "dias" : "periodo"
+  );
+  const [specificDays, setSpecificDays] = useState(
+    diasIniciais.length > 0 ? diasIniciais : [""]
+  );
 
   const [form, setForm] = useState({
     title: initialData.title || "",
@@ -126,24 +54,28 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     image: initialData.linkImagem || "",
   });
 
-  const [palestrantes, setPalestrantes] = useState(
-    withDefaultRow(normalizeParticipants(initialData.palestrantes))
-  );
-  const [bandas, setBandas] = useState(
-    withDefaultRow(normalizeParticipants(initialData.bandas))
-  );
+  /* Ids dos convidados vinculados.
+
+     Começa em `null`, não em lista vazia, e isso é deliberado: o seletor carrega
+     os vinculados de forma assíncrona, e uma lista vazia significaria "remova
+     todos". Quem salvasse antes do carregamento terminar desvincularia todos os
+     convidados do evento sem perceber. `null` significa "ainda não sei", e a
+     sincronização não mexe em nada nesse caso. */
+  const [convidadosIds, setConvidadosIds] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const changeRow = (setList) => (index, field, value) =>
-    setList((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
-  const addRow = (setList) => () =>
-    setList((prev) => [...prev, { name: "", image: "" }]);
-  const removeRow = (setList) => (index) =>
-    setList((prev) => withDefaultRow(prev.filter((_, i) => i !== index)));
+  const changeDay = (index, value) =>
+    setSpecificDays((prev) => prev.map((d, i) => (i === index ? value : d)));
+  const addDay = () => setSpecificDays((prev) => [...prev, ""]);
+  const removeDay = (index) =>
+    setSpecificDays((prev) => {
+      const restante = prev.filter((_, i) => i !== index);
+      return restante.length > 0 ? restante : [""];
+    });
 
   const handleLocationChange = (lat, lng) => {
     setForm((prev) => ({
@@ -157,20 +89,22 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const date =
-        form.startDay && form.startTime ? `${form.startDay}T${form.startTime}` : "";
-      const endDate =
-        form.endDay && form.endTime ? `${form.endDay}T${form.endTime}` : "";
-      const limpar = (lista) =>
-        lista
-          .map((p) => ({ name: p.name.trim(), image: p.image.trim() }))
-          .filter((p) => p.name);
+      const dias = dateMode === "dias" ? normalizeEventDays(specificDays) : [];
+
+      /* Em dias específicos, o mesmo horário vale para todos os dias, e
+         início/término apontam para o primeiro e o último — é o que mantém
+         ordenação, calendário e classificação de passado/futuro funcionando. */
+      const primeiroDia = dias.length > 0 ? dias[0] : form.startDay;
+      const ultimoDia = dias.length > 0 ? dias[dias.length - 1] : form.endDay;
+
+      const date = primeiroDia && form.startTime ? `${primeiroDia}T${form.startTime}` : "";
+      const endDate = ultimoDia && form.endTime ? `${ultimoDia}T${form.endTime}` : "";
       await onSubmit({
         ...form,
-        palestrantes: limpar(palestrantes),
-        bandas: limpar(bandas),
+        convidadosIds,
         date,
         endDate,
+        days: dias,
       });
     } finally {
       setSubmitting(false);
@@ -254,88 +188,177 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         <hr className="my-5 border-gray-100" />
 
-        {/* Início + Término (data e hora separadas) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-1">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
-              <CalendarDays size={16} className="text-[#FF6D2C]" />
-              Início
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                name="startDay"
-                value={form.startDay}
-                onChange={handleChange}
-                className={`${dateTimeBase} flex-1 min-w-0`}
-                required
-              />
-              <TimeInput
-                name="startTime"
-                value={form.startTime}
-                onChange={handleChange}
-                className={dateTimeBase}
-                wrapperClassName="w-[150px]"
-                required
-              />
-            </div>
+        {/* Quando acontece — período contínuo ou dias específicos */}
+        <div className="mb-1">
+          <span className="block text-sm font-bold text-[#1E1E1E] mb-2">Quando acontece</span>
+
+          <div role="radiogroup" aria-label="Formato das datas do evento" className="flex flex-col sm:flex-row gap-2 mb-4">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={dateMode === "periodo"}
+              onClick={() => setDateMode("periodo")}
+              className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-colors ${
+                dateMode === "periodo"
+                  ? "border-[#FF6D2C] bg-[#FFF1E8] text-[#D5650D]"
+                  : "border-gray-300 bg-[#FFF8F3] text-[#1E1E1E]/70 hover:border-[#FF6D2C]/50"
+              }`}
+            >
+              <CalendarRange size={16} />
+              Dias seguidos
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={dateMode === "dias"}
+              onClick={() => setDateMode("dias")}
+              className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-colors ${
+                dateMode === "dias"
+                  ? "border-[#FF6D2C] bg-[#FFF1E8] text-[#D5650D]"
+                  : "border-gray-300 bg-[#FFF8F3] text-[#1E1E1E]/70 hover:border-[#FF6D2C]/50"
+              }`}
+            >
+              <CalendarDays size={16} />
+              Dias avulsos
+            </button>
           </div>
-          <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
-              <CalendarDays size={16} className="text-[#FF6D2C]" />
-              Término
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                name="endDay"
-                value={form.endDay}
-                onChange={handleChange}
-                className={`${dateTimeBase} flex-1 min-w-0`}
-                required
-              />
-              <TimeInput
-                name="endTime"
-                value={form.endTime}
-                onChange={handleChange}
-                className={dateTimeBase}
-                wrapperClassName="w-[150px]"
-                required
-              />
+
+          {dateMode === "periodo" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+                  <CalendarDays size={16} className="text-[#FF6D2C]" />
+                  Início
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    name="startDay"
+                    value={form.startDay}
+                    onChange={handleChange}
+                    className={`${dateTimeBase} flex-1 min-w-0`}
+                    required
+                  />
+                  <TimeInput
+                    name="startTime"
+                    value={form.startTime}
+                    onChange={handleChange}
+                    className={dateTimeBase}
+                    wrapperClassName="w-[150px]"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+                  <CalendarDays size={16} className="text-[#FF6D2C]" />
+                  Término
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    name="endDay"
+                    value={form.endDay}
+                    onChange={handleChange}
+                    className={`${dateTimeBase} flex-1 min-w-0`}
+                    required
+                  />
+                  <TimeInput
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    className={dateTimeBase}
+                    wrapperClassName="w-[150px]"
+                    required
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E]">
+                  <CalendarDays size={16} className="text-[#FF6D2C]" />
+                  Dias do evento
+                </label>
+                <button
+                  type="button"
+                  onClick={addDay}
+                  title="Adicionar dia"
+                  className="flex items-center gap-1.5 text-sm font-semibold text-[#FF6D2C] hover:text-[#e65c18] transition-colors"
+                >
+                  <Plus size={18} />
+                  Adicionar dia
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {specificDays.map((dia, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="date"
+                      aria-label={`Dia ${index + 1} do evento`}
+                      value={dia}
+                      onChange={(e) => changeDay(index, e.target.value)}
+                      className={`${dateTimeBase} flex-1 min-w-0`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeDay(index)}
+                      title="Remover dia"
+                      aria-label={`Remover dia ${index + 1}`}
+                      className="w-11 h-11 shrink-0 rounded-lg border border-gray-300 bg-[#FFF8F3] flex items-center justify-center text-[#1E1E1E]/40 hover:text-red-500 hover:border-red-300 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#1E1E1E] mb-2">
+                    Começa às
+                  </label>
+                  <TimeInput
+                    name="startTime"
+                    value={form.startTime}
+                    onChange={handleChange}
+                    className={`${dateTimeBase} w-full`}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#1E1E1E] mb-2">
+                    Termina às
+                  </label>
+                  <TimeInput
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    className={`${dateTimeBase} w-full`}
+                    required
+                  />
+                </div>
+              </div>
+
+              <p className="mt-2 text-xs text-[#1E1E1E]/50">
+                Use para eventos que acontecem em dias separados, como três sábados
+                seguidos. O horário informado vale para todos os dias, e o local do
+                evento é o mesmo em todos.
+              </p>
+            </div>
+          )}
         </div>
 
         <hr className="my-5 border-gray-100" />
 
         {/* Palestrantes — cada palestrante tem nome e a sua própria foto (link do Drive) */}
-        <ParticipantSection
-          label="Palestrantes"
-          icon={<Users size={16} className="text-[#FF6D2C]" />}
-          namePlaceholder="Nome do palestrante"
-          addTitle="Adicionar palestrante"
-          removeTitle="Remover palestrante"
-          helpText="Cole o link da foto de cada palestrante (Google Drive compartilhado como “qualquer pessoa com o link”)."
-          items={palestrantes}
-          onChange={changeRow(setPalestrantes)}
-          onAdd={addRow(setPalestrantes)}
-          onRemove={removeRow(setPalestrantes)}
-        />
-
-        <hr className="my-5 border-gray-100" />
-
-        {/* Bandas — cada banda tem nome e a sua própria foto (link do Drive) */}
-        <ParticipantSection
-          label="Bandas"
-          icon={<Music size={16} className="text-[#FF6D2C]" />}
-          namePlaceholder="Nome da banda"
-          addTitle="Adicionar banda"
-          removeTitle="Remover banda"
-          helpText="Cole o link da foto de cada banda (Google Drive compartilhado como “qualquer pessoa com o link”)."
-          items={bandas}
-          onChange={changeRow(setBandas)}
-          onAdd={addRow(setBandas)}
-          onRemove={removeRow(setBandas)}
+        <ConvidadosPicker
+          eventId={eventId}
+          selecionados={convidadosIds ?? []}
+          onChange={setConvidadosIds}
         />
 
         <hr className="my-5 border-gray-100" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAllEvents, splitDateTime } from "../../../../services/eventService";
+import { fetchAllEvents, splitDateTime, eventDayKeys } from "../../../../services/eventService";
 
 const WEEK_DAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
@@ -37,27 +37,54 @@ function generateCalendarDays() {
   return days;
 }
 
-/* Converte um evento nos dados de posição da grade: coluna (dia da semana),
-   primeira e última hora cobertas. Retorna null se cair fora da semana exibida. */
+/* Primeira e última linha da grade de horas exibida. */
+const FIRST_HOUR = 8;
+const LAST_HOUR = 17;
+
+/* Converte um evento nos segmentos que ele ocupa na grade: um por dia coberto
+   que caia na semana exibida. Um evento de vários dias ocupa uma coluna por
+   dia — o primeiro dia começa no horário de início, o último termina no de
+   término e os dias do meio ocupam a coluna inteira. Devolve lista vazia se
+   nenhum dia do evento cair na semana. */
 function placeEvent(event, days) {
+  const dias = eventDayKeys(event);
+  if (dias.length === 0) return [];
+
   const start = splitDateTime(event.date);
   const end = splitDateTime(event.endDate || event.date);
-  const col = days.findIndex((d) => d.key === start.day);
-  if (col === -1) return null;
+  const segmentos = [];
 
-  const startHour = Number(start.time.slice(0, 2));
-  const [endH, endM] = end.time.split(":").map(Number);
-  /* termina às HH:00 não ocupa a linha HH inteira; garante ao menos a linha de início */
-  let lastHour = endM > 0 ? endH : endH - 1;
-  if (!Number.isFinite(lastHour) || lastHour < startHour) lastHour = startHour;
+  dias.forEach((key, i) => {
+    const col = days.findIndex((d) => d.key === key);
+    if (col === -1) return; // dia fora da semana exibida
 
-  return { col, startHour, lastHour, title: event.title, id: event.id };
+    const isPrimeiro = i === 0;
+    const isUltimo = i === dias.length - 1;
+
+    let startHour = isPrimeiro ? Number(start.time.slice(0, 2)) : FIRST_HOUR;
+    if (!Number.isFinite(startHour)) startHour = FIRST_HOUR;
+
+    let lastHour;
+    if (isUltimo) {
+      const [endH, endM] = end.time.split(":").map(Number);
+      /* termina às HH:00 não ocupa a linha HH inteira */
+      lastHour = Number.isFinite(endH) ? (endM > 0 ? endH : endH - 1) : startHour;
+    } else {
+      lastHour = LAST_HOUR;
+    }
+    /* garante ao menos a linha de início */
+    if (!Number.isFinite(lastHour) || lastHour < startHour) lastHour = startHour;
+
+    segmentos.push({ col, startHour, lastHour, title: event.title, id: event.id });
+  });
+
+  return segmentos;
 }
 
 /* Componente Calendário Mini */
 export default function CalendarMini() {
   const days = generateCalendarDays();
-  const hours = Array.from({ length: 10 }, (_, i) => i + 8);
+  const hours = Array.from({ length: LAST_HOUR - FIRST_HOUR + 1 }, (_, i) => i + FIRST_HOUR);
   const [placed, setPlaced] = useState([]);
 
   useEffect(() => {
@@ -65,7 +92,7 @@ export default function CalendarMini() {
     fetchAllEvents()
       .then((events) => {
         if (!active) return;
-        setPlaced(events.map((e) => placeEvent(e, days)).filter(Boolean));
+        setPlaced(events.flatMap((e) => placeEvent(e, days)));
       })
       .catch(() => active && setPlaced([]));
     return () => {

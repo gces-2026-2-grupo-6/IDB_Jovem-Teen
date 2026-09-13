@@ -207,10 +207,14 @@ test.describe('Admin - Diretores & Líderes (restrição ao superadmin)', () => 
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('aside').getByRole('link', { name: /Diretores & Líderes/i })).toHaveCount(0);
 
+    /* A US03 mudou o destino de quem é barrado: antes ia para /admin/produtos,
+       o que pressupunha que todo administrador enxerga produtos. Com setores,
+       isso deixou de ser verdade — agora vai para a tela de acesso negado, que
+       mostra os setores da própria pessoa. */
     await page.goto('/admin/lideres', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/admin\/produtos/);
+    await expect(page).toHaveURL(/\/unauthorized/);
 
     await page.goto('/admin/lideres/criar', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/admin\/produtos/);
+    await expect(page).toHaveURL(/\/unauthorized/);
   });
 });

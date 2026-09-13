@@ -14,8 +14,10 @@ import EmptyState from "../../../components/ui/EmptyState";
 import DeleteActivityModal from "./components/DeleteActivityModal";
 import ActivityRow from "./components/ActivityRow";
 import ActivityInlineForm from "./components/ActivityInlineForm";
+import usePermissao from "../../../hooks/usePermissao";
 
 export default function AdminEventoEditSchedule() {
+  const { podeExcluir } = usePermissao();
   const navigate = useNavigate();
   const { id } = useParams();
   const deleteModal = useModal();
@@ -146,7 +148,7 @@ export default function AdminEventoEditSchedule() {
                   <ActivityRow
                     item={item}
                     onEdit={(it) => setEditingItem(it)}
-                    onDelete={(it) => deleteModal.open(it)}
+                    onDelete={podeExcluir ? (it) => deleteModal.open(it) : undefined}
                     showDay={isMultiDay}
                   />
                 )}

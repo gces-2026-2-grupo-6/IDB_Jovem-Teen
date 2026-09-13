@@ -1,6 +1,25 @@
 import { api } from "./api";
 import idbJovemOne from "../assets/images/idbJovemOne.png";
 import { toBackendImageUrl } from "../utils/driveImage";
+import {
+  normalizarFuncao,
+  normalizarRedes,
+  validarConvidado,
+} from "../utils/convidados";
+import { podeExcluirAgora, ERRO_SEM_PERMISSAO_PARA_EXCLUIR } from "./auth/permissaoAtual";
+
+/* Re-exportado para as telas importarem convidado de um lugar só. */
+export {
+  FUNCAO,
+  FUNCOES,
+  ROTULO_PLURAL,
+  agruparPorFuncao,
+  filtrarConvidados,
+  normalizarFuncao,
+  normalizarRedes,
+  comProtocolo,
+  LIMITE_MINI_BIO,
+} from "../utils/convidados";
 
 const DEFAULT_SPEAKER_IMAGE = idbJovemOne;
 
@@ -11,15 +30,28 @@ function adaptSpeaker(apiSpeaker) {
     name: apiSpeaker.nome,
     photoLink: apiSpeaker.link_foto || "",
     image: apiSpeaker.link_foto ? toBackendImageUrl(apiSpeaker.link_foto) : DEFAULT_SPEAKER_IMAGE,
+    /* `role` é o texto como foi gravado, para exibir sem descaracterizar o
+       cadastro antigo; `funcao` é a classificação derivada, usada para agrupar. */
     role: apiSpeaker.profissao || "",
+    funcao: normalizarFuncao(apiSpeaker.profissao),
+    /* Campos que a API ainda não guarda. O nome deles está isolado aqui: se o
+       back-end fechar com outro nome, só estas duas linhas mudam. */
+    miniBio: apiSpeaker.mini_bio || "",
+    redes: normalizarRedes(apiSpeaker.redes_sociais),
   };
 }
 
 function toApiSpeaker(form) {
+  const redes = normalizarRedes(form.redes);
   return {
-    nome: form.name,
+    nome: form.name ?? form.nome,
     link_foto: form.image || null,
-    profissao: form.role || null,
+    profissao: form.role || form.funcao || null,
+    /* Enviados mesmo sem coluna correspondente: os schemas da API não usam
+       extra="forbid", então o campo desconhecido é ignorado em vez de recusado.
+       Nada quebra enquanto o back-end não os persistir. */
+    mini_bio: form.miniBio?.trim() || null,
+    redes_sociais: redes.length > 0 ? redes : null,
   };
 }
 
@@ -55,8 +87,9 @@ export async function fetchSpeakersByEvent(eventId) {
 }
 
 export async function handleCreateSpeaker(form) {
-  if (!form.name?.trim()) {
-    return { success: false, error: "Nome do participante é obrigatório." };
+  const erro = validarConvidado({ ...form, nome: form.name ?? form.nome });
+  if (erro) {
+    return { success: false, error: erro };
   }
   try {
     const { data } = await api.post("/banda-palestrante/", toApiSpeaker(form));
@@ -67,6 +100,10 @@ export async function handleCreateSpeaker(form) {
 }
 
 export async function handleUpdateSpeaker(participanteId, form) {
+  const erro = validarConvidado({ ...form, nome: form.name ?? form.nome });
+  if (erro) {
+    return { success: false, error: erro };
+  }
   try {
     const { data } = await api.put(`/banda-palestrante/${participanteId}`, toApiSpeaker(form));
     return { success: true, speaker: adaptSpeaker(data) };
@@ -76,6 +113,10 @@ export async function handleUpdateSpeaker(participanteId, form) {
 }
 
 export async function handleDeleteSpeaker(participanteId) {
+  /* Excluir conteúdo é restrito ao superadministrador (US03). */
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
   try {
     await api.delete(`/banda-palestrante/${participanteId}`);
     return { success: true, error: null };

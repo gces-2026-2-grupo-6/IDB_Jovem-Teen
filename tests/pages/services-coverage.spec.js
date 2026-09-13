@@ -1,5 +1,5 @@
 import { test, expect } from '../helpers/testWithCoverage.js';
-import { loginAsAdmin } from '../helpers/adminAuth.js';
+import { loginAsAdmin, loginComPapeis } from '../helpers/adminAuth.js';
 import { setupApiMock } from '../helpers/apiMock.js';
 
 const json = (data, status = 200) => ({
@@ -353,32 +353,61 @@ test.describe('eventService.js – branches de erro', () => {
     expect(alertMessage.length).toBeGreaterThan(0);
   });
 
-  test('syncEventSpeakers – atualiza foto do speaker existente (linha 305-312)', async ({ page }) => {
-    await page.goto('/admin/eventos/1/editar');
+  /* Os dois testes que existiam aqui exercitavam a sincronização por nome: um
+     cobria atualizar a foto de um convidado existente ao salvar o evento, o
+     outro cobria não duplicar quem já estava vinculado. A US06 substituiu essa
+     lógica — o vínculo é por id, então não há mais nome a comparar nem foto a
+     atualizar a partir do formulário do evento. O que ficou no lugar é
+     verificado abaixo, e o fluxo completo em tests/admin/convidados.spec.js. */
 
-    const palestrInput = page.getByPlaceholder('Nome do palestrante').first();
-    await palestrInput.fill('Pr. André');
+  test('syncEventSpeakers – vincula os ids novos e desvincula os removidos', async ({ page }) => {
+    await loginAsAdmin(page);
+    await setupApiMock(page);
+    await page.goto('/admin/eventos');
 
-    const fotoInput = page.getByPlaceholder('Link da foto (Google Drive)').first();
-    await fotoInput.fill('https://drive.google.com/file/d/NOVA_FOTO/view');
+    const chamadas = [];
+    await page.route(/\/evento\/\d+\/participantes/, (route) => {
+      const req = route.request();
+      const metodo = req.method();
 
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
+      if (metodo === 'GET') {
+        return route.fulfill(
+          json([{ participante_id: 10, nome: 'Já vinculado', profissao: 'Pregador' }])
+        );
+      }
+      chamadas.push(`${metodo} ${new URL(req.url()).pathname}`);
+      return route.fulfill({ status: metodo === 'POST' ? 201 : 204, body: '' });
+    });
 
-    const url = page.url();
-    expect(url).toBeTruthy();
+    await page.evaluate(async () => {
+      const mod = await import('/src/services/eventService.js');
+      /* 10 está vinculado e sai; 20 entra. */
+      await mod.vincularConvidado(1, 20);
+      await mod.desvincularConvidado(1, 10);
+    });
+
+    expect(chamadas).toContain('POST /evento/1/participantes/20');
+    expect(chamadas).toContain('DELETE /evento/1/participantes/10');
   });
 
-  test('syncEventSpeakers – speaker já vinculado não duplica (linha 315)', async ({ page }) => {
-    await page.goto('/admin/eventos/1/editar');
-    const palestrInput = page.getByPlaceholder('Nome do palestrante').first();
-    await palestrInput.fill('Pr. André');
+  test('vincularConvidado – devolve erro quando a API falha', async ({ page }) => {
+    await loginAsAdmin(page);
+    await setupApiMock(page);
+    await page.goto('/admin/eventos');
 
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
+    await page.route(/\/evento\/\d+\/participantes\/\d+$/, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill(errorResponse('Participante já vinculado a este evento.'))
+        : route.fallback()
+    );
 
-    const url = page.url();
-    expect(url).toBeTruthy();
+    const resultado = await page.evaluate(async () => {
+      const mod = await import('/src/services/eventService.js');
+      return mod.vincularConvidado(1, 20);
+    });
+
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBe('Participante já vinculado a este evento.');
   });
 });
 
@@ -737,221 +766,146 @@ test.describe('productService.js – branches de erro', () => {
   });
 });
 
+/* Os testes antigos deste bloco chegavam ao speakerService digitando nos campos
+   "Nome do palestrante" e "Nome da banda" do formulário de evento. A US06
+   substituiu esse texto livre pela seleção de convidados já cadastrados — o
+   vínculo passou a ser por id, e não há mais campo para digitar.
+
+   As mesmas ramificações continuam cobertas, agora chamando o serviço
+   diretamente, como já se faz no bloco do liderService acima. O comportamento
+   novo de vínculo é coberto em tests/admin/convidados.spec.js. */
 test.describe('speakerService.js – branches de erro', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
+    await page.goto('/admin/palestrantes');
   });
 
+  const criar = (page, form) =>
+    page.evaluate(async (dados) => {
+      const mod = await import('/src/services/speakerService.js');
+      return mod.handleCreateSpeaker(dados);
+    }, form);
+
   test('handleCreateSpeaker – API retorna detail array (getErrorMessage linha 28-34)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/?$/, async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill(errorArray());
-      }
-      await route.fallback(); return;;
-    });
+    await page.route(/\/banda-palestrante\/?$/, (route) =>
+      route.request().method() === 'POST' ? route.fulfill(errorArray()) : route.fallback()
+    );
 
-    await page.goto('/admin/eventos/criar');
+    const resultado = await criar(page, { name: 'Palestrante Array' });
 
-    let alertMessage = '';
-    page.on('dialog', async dialog => {
-      alertMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    await page.getByPlaceholder('Nome do Evento').fill('Evento Speaker Array Error');
-    await page.locator('select[name="tipoEvento"]').selectOption('Conferência');
-    await page.locator('input[name="startDay"]').fill('2029-12-31');
-    await page.locator('input[name="startTime"]').fill('09:00');
-    await page.locator('input[name="endDay"]').fill('2029-12-31');
-    await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Digite o nome ou endereço do local').fill('Teste');
-    const option = page.locator('ul.absolute button').first();
-    await option.waitFor({ state: 'visible' }).catch(() => { });
-    await option.click().catch(() => { });
-    await page.waitForTimeout(400);
-
-    await page.getByPlaceholder('Nome do palestrante').first().fill('Palestrante Novo Array');
-
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toContain('Campo inválido');
+    expect(resultado.error).toContain('Outro erro');
   });
 
   test('handleCreateSpeaker – API retorna detail string (getErrorMessage linha 35)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/?$/, async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill(json({ detail: 'Erro string no speaker' }, 400));
-      }
-      await route.fallback(); return;;
-    });
+    await page.route(/\/banda-palestrante\/?$/, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill(errorResponse('Falha ao salvar o convidado.'))
+        : route.fallback()
+    );
 
-    await page.goto('/admin/eventos/criar');
+    const resultado = await criar(page, { name: 'Palestrante String' });
 
-    let alertMessage = '';
-    page.on('dialog', async dialog => {
-      alertMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    await page.getByPlaceholder('Nome do Evento').fill('Evento Speaker String Error');
-    await page.locator('select[name="tipoEvento"]').selectOption('Conferência');
-    await page.locator('input[name="startDay"]').fill('2029-12-31');
-    await page.locator('input[name="startTime"]').fill('09:00');
-    await page.locator('input[name="endDay"]').fill('2029-12-31');
-    await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Digite o nome ou endereço do local').fill('Teste');
-    const option = page.locator('ul.absolute button').first();
-    await option.waitFor({ state: 'visible' }).catch(() => { });
-    await option.click().catch(() => { });
-    await page.waitForTimeout(400);
-
-    await page.getByPlaceholder('Nome do palestrante').first().fill('Palestrante String Error');
-
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBe('Falha ao salvar o convidado.');
   });
 
   test('handleCreateSpeaker – API retorna detail.msg (getErrorMessage linha 36)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/?$/, async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill(json({ detail: { msg: 'Objeto msg speaker' } }, 400));
-      }
-      await route.fallback(); return;;
-    });
+    await page.route(/\/banda-palestrante\/?$/, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill(json({ detail: { msg: 'Mensagem em objeto' } }, 422))
+        : route.fallback()
+    );
 
-    await page.goto('/admin/eventos/criar');
+    const resultado = await criar(page, { name: 'Palestrante Objeto' });
 
-    page.on('dialog', async dialog => { await dialog.accept(); });
-
-    await page.getByPlaceholder('Nome do Evento').fill('Evento Speaker Obj Error');
-    await page.locator('select[name="tipoEvento"]').selectOption('Conferência');
-    await page.locator('input[name="startDay"]').fill('2029-12-31');
-    await page.locator('input[name="startTime"]').fill('09:00');
-    await page.locator('input[name="endDay"]').fill('2029-12-31');
-    await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Digite o nome ou endereço do local').fill('Teste');
-    const option = page.locator('ul.absolute button').first();
-    await option.waitFor({ state: 'visible' }).catch(() => { });
-    await option.click().catch(() => { });
-    await page.waitForTimeout(400);
-
-    await page.getByPlaceholder('Nome do palestrante').first().fill('Palestrante Obj Error');
-
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBe('Mensagem em objeto');
   });
 
   test('handleCreateSpeaker – API retorna erro sem detail (error.message fallback, linha 37)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/?$/, async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill(json({}, 500));
-      }
-      await route.fallback(); return;;
-    });
+    await page.route(/\/banda-palestrante\/?$/, (route) =>
+      route.request().method() === 'POST' ? route.fulfill(json({}, 500)) : route.fallback()
+    );
 
-    await page.goto('/admin/eventos/criar');
+    const resultado = await criar(page, { name: 'Palestrante Fallback' });
 
-    page.on('dialog', async dialog => { await dialog.accept(); });
-
-    await page.getByPlaceholder('Nome do Evento').fill('Evento Speaker Fallback');
-    await page.locator('select[name="tipoEvento"]').selectOption('Conferência');
-    await page.locator('input[name="startDay"]').fill('2029-12-31');
-    await page.locator('input[name="startTime"]').fill('09:00');
-    await page.locator('input[name="endDay"]').fill('2029-12-31');
-    await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Digite o nome ou endereço do local').fill('Teste');
-    const option = page.locator('ul.absolute button').first();
-    await option.waitFor({ state: 'visible' }).catch(() => { });
-    await option.click().catch(() => { });
-    await page.waitForTimeout(400);
-
-    await page.getByPlaceholder('Nome do palestrante').first().fill('Palestrante Fallback');
-
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBeTruthy();
   });
 
   test('handleCreateSpeaker – nome vazio retorna erro sem chamar API (linha 58-60)', async ({ page }) => {
-    await page.goto('/admin/eventos/criar');
-
-    await page.getByPlaceholder('Nome do Evento').fill('Evento Sem Palestrante');
-    await page.locator('select[name="tipoEvento"]').selectOption('Conferência');
-    await page.locator('input[name="startDay"]').fill('2029-12-31');
-    await page.locator('input[name="startTime"]').fill('09:00');
-    await page.locator('input[name="endDay"]').fill('2029-12-31');
-    await page.locator('input[name="endTime"]').fill('18:00');
-    await page.getByPlaceholder('Digite o nome ou endereço do local').fill('Teste');
-    const option = page.locator('ul.absolute button').first();
-    await option.waitFor({ state: 'visible' }).catch(() => { });
-    await option.click().catch(() => { });
-    await page.waitForTimeout(400);
-
-    // Deixa palestrante vazio (não preenche)
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    // Verifica que alguma URL foi atingida
-    await expect(page.locator('body')).toBeVisible();
-  });
-
-  // ── handleUpdateSpeaker – catch block (linha 74) ──────────────────────────
-
-  test('handleUpdateSpeaker – catch quando API falha (linha 74)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/\d+$/, async (route) => {
-      if (route.request().method() === 'PUT') {
-        return route.fulfill(errorResponse('Erro ao atualizar speaker.'));
-      }
-      await route.fallback(); return;;
+    let chamouApi = false;
+    await page.route(/\/banda-palestrante/, (route) => {
+      if (route.request().method() === 'POST') chamouApi = true;
+      return route.fallback();
     });
 
-    // O handleUpdateSpeaker é chamado em syncEventSpeakers quando a foto mudou
-    await page.goto('/admin/eventos/1/editar');
+    const resultado = await criar(page, { name: '   ' });
 
-    page.on('dialog', async dialog => { await dialog.accept(); });
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toContain('nome');
+    expect(chamouApi).toBe(false);
+  });
 
-    // Preenche palestrante com nome de um existente no mock e foto diferente
-    const palestrInput = page.getByPlaceholder('Nome do palestrante').first();
-    await palestrInput.fill('Pr. André');
+  test('handleUpdateSpeaker – catch quando API falha (linha 74)', async ({ page }) => {
+    await page.route(/\/banda-palestrante\/\d+$/, (route) =>
+      route.request().method() === 'PUT'
+        ? route.fulfill(errorResponse('Erro ao atualizar speaker.'))
+        : route.fallback()
+    );
 
-    const fotoInput = page.getByPlaceholder('Link da foto (Google Drive)').first();
-    await fotoInput.fill('https://drive.google.com/file/d/NOVA_FOTO_ERRO/view');
+    const resultado = await page.evaluate(async () => {
+      const mod = await import('/src/services/speakerService.js');
+      return mod.handleUpdateSpeaker(1, { name: 'Pr. André', image: 'https://drive.google.com/file/d/NOVA/view' });
+    });
 
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBe('Erro ao atualizar speaker.');
   });
 
   test('handleDeleteSpeaker – catch quando API falha (linha 83)', async ({ page }) => {
-    await page.route(/\/banda-palestrante\/\d+$/, async (route) => {
-      if (route.request().method() === 'DELETE') {
-        return route.fulfill(errorResponse('Erro ao excluir speaker.'));
-      }
-      await route.fallback(); return;;
+    await page.route(/\/banda-palestrante\/\d+$/, (route) =>
+      route.request().method() === 'DELETE'
+        ? route.fulfill(errorResponse('Erro ao excluir speaker.'))
+        : route.fallback()
+    );
+
+    const resultado = await page.evaluate(async () => {
+      const mod = await import('/src/services/speakerService.js');
+      return mod.handleDeleteSpeaker(1);
     });
 
-    await page.goto('/admin/eventos/1/editar');
-
-    page.on('dialog', async dialog => { await dialog.accept(); });
-
-    // Limpa o campo do palestrante para que syncEventSpeakers delete o speaker vinculado
-    const palestrInput = page.getByPlaceholder('Nome do palestrante').first();
-    await palestrInput.fill('');
-
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(800);
-
-    await expect(page.locator('body')).toBeVisible();
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toBe('Erro ao excluir speaker.');
   });
 });
 
+/* Exclusão de convidado segue a regra da US03: só o superadministrador. */
+test.describe('speakerService.js – exclusão restrita', () => {
+  test('handleDeleteSpeaker recusa administrador de setor antes de chamar a API', async ({ page }) => {
+    await loginComPapeis(page, ['admin', 'admin-eventos']);
+    await setupApiMock(page);
+    await page.goto('/admin/palestrantes');
+
+    let chamouApi = false;
+    await page.route(/\/banda-palestrante\/\d+$/, (route) => {
+      if (route.request().method() === 'DELETE') chamouApi = true;
+      return route.fallback();
+    });
+
+    const resultado = await page.evaluate(async () => {
+      const mod = await import('/src/services/speakerService.js');
+      return mod.handleDeleteSpeaker(1);
+    });
+
+    expect(resultado.success).toBe(false);
+    expect(resultado.error).toContain('superadministradora');
+    expect(chamouApi).toBe(false);
+  });
+});
 
 test.describe('volunteerService.js – branches de erro', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,6 +1,16 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { TOKEN_KEY } from "../services/api";
+import {
+  administraSetor,
+  ehAdmin,
+  ehSuperadmin,
+  lerPayloadDoToken,
+  podeExcluir,
+  podeGerenciarAdministradores,
+  rotaInicialDoPainel,
+  setoresDoUsuario,
+} from "../utils/permissoes";
 
 const AuthContext = createContext(null);
 
@@ -14,38 +24,22 @@ const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL;
 const REALM = import.meta.env.VITE_KEYCLOAK_REALM;
 const CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID;
 
-/* Papéis (realm roles do Keycloak) que dão acesso à área administrativa */
-const ADMIN_ROLES = ["admin", "superadmin"];
-
-/* Decodifica o payload de um JWT sem dependência externa */
-function decodeToken(token) {
-  try {
-    const payload = token.split(".")[1];
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
-        .join("")
-    );
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
-/* Monta o usuário a partir das claims do JWT; retorna null se expirado/inválido */
+/* Monta o usuário a partir das claims do JWT; retorna null se expirado/inválido.
+   Os papéis vêm de `realm_access.roles`, que é exatamente onde a API os procura,
+   e a leitura de setor fica em src/utils/permissoes.js. */
 function userFromToken(token) {
-  const claims = decodeToken(token);
+  const claims = lerPayloadDoToken(token);
   if (!claims) return null;
   if (claims.exp && claims.exp * 1000 <= Date.now()) return null;
   const roles = claims.realm_access?.roles || [];
   return {
+    id: claims.sub || "",
     nome: claims.name || claims.preferred_username || "",
     email: claims.email || "",
     roles,
-    isAdmin: roles.some((r) => ADMIN_ROLES.includes(r)),
-    isSuperAdmin: roles.includes("superadmin"),
+    isAdmin: ehAdmin(roles),
+    isSuperAdmin: ehSuperadmin(roles),
+    setores: setoresDoUsuario(roles),
   };
 }
 
@@ -84,7 +78,10 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem(TOKEN_KEY, token);
       setUser(u);
-      return { success: true };
+      /* Devolve o destino junto: quem só administra inscrições não tem o que
+         ver no painel inicial, e o estado do contexto ainda não atualizou neste
+         instante para a tela consultar sozinha. */
+      return { success: true, rotaInicial: rotaInicialDoPainel(u.roles) };
     } catch (error) {
       const desc = error?.response?.data?.error_description;
       const msg =
@@ -136,8 +133,21 @@ export function AuthProvider({ children }) {
   const isAdmin = !!user?.isAdmin;
   const isSuperAdmin = !!user?.isSuperAdmin;
 
+  /* Permissões derivadas dos papéis, expostas prontas para as telas não
+     refazerem a conta cada uma do seu jeito. */
+  const papeis = user?.roles || [];
+  const permissoes = {
+    setores: user?.setores || [],
+    administra: (setor) => administraSetor(papeis, setor),
+    podeExcluir: podeExcluir(papeis),
+    podeGerenciarAdministradores: podeGerenciarAdministradores(papeis),
+    rotaInicial: rotaInicialDoPainel(papeis),
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isAdmin, isSuperAdmin }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, isAuthenticated, isAdmin, isSuperAdmin, ...permissoes }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -38,13 +38,16 @@ export default function ActivityRow({ item, onEdit, onDelete, showDay = false })
         >
           <Pencil size={15} className="text-blue-600" />
         </button>
-        <button
-          onClick={() => onDelete(item)}
-          className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
-          title="Excluir atividade"
-        >
-          <Trash2 size={15} className="text-red-500" />
-        </button>
+        {/* Excluir é restrito ao superadministrador: sem handler, sem botão. */}
+        {onDelete && (
+          <button
+            onClick={() => onDelete(item)}
+            className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
+            title="Excluir atividade"
+          >
+            <Trash2 size={15} className="text-red-500" />
+          </button>
+        )}
       </div>
     </div>
   );
