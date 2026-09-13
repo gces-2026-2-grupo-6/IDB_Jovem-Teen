@@ -118,26 +118,6 @@ export default function AdminEventoDetails() {
                 {formatDate(event.date)}
               </td>
             </tr>
-            <tr className="border-b border-gray-100">
-              <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
-                Palestrantes
-              </td>
-              <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
-                {(Array.isArray(event.palestrantes)
-                  ? event.palestrantes.map((p) => p.name).join(", ")
-                  : event.palestrantes) || "—"}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
-                Bandas
-              </td>
-              <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
-                {(Array.isArray(event.bandas)
-                  ? event.bandas.map((b) => b.name).join(", ")
-                  : event.bandas) || "—"}
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>

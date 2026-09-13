@@ -1,5 +1,5 @@
 import { test, expect } from '../helpers/testWithCoverage.js';
-import { loginComPapeis, KEYCLOAK_ID_DE_TESTE } from '../helpers/adminAuth';
+import { loginComPapeis, mockKeycloakLogin, KEYCLOAK_ID_DE_TESTE } from '../helpers/adminAuth';
 import { setupApiMock } from '../helpers/apiMock';
 
 /* Perfis da US03. */
@@ -129,6 +129,34 @@ test.describe('Guarda de rota por setor', () => {
     await expect(
       page.getByText(/não administra nenhum setor/i)
     ).toBeVisible();
+  });
+});
+
+test.describe('Destino após o login', () => {
+  /* Quem não administra eventos nem produtos não tem o que ver no painel
+     inicial; o login leva direto para o setor da pessoa. */
+  test('admin de inscrições cai na tela de voluntários', async ({ page }) => {
+    await setupApiMock(page);
+    await mockKeycloakLogin(page, ADMIN_INSCRICOES);
+    await page.goto('/login');
+
+    await page.fill('input[name="usuario"]', 'idbjovem');
+    await page.fill('input[name="senha"]', 'idbjovem');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await expect(page).toHaveURL(/\/admin\/voluntarios/);
+  });
+
+  test('admin de eventos cai no painel, que resume o setor dele', async ({ page }) => {
+    await setupApiMock(page);
+    await mockKeycloakLogin(page, ADMIN_EVENTOS);
+    await page.goto('/login');
+
+    await page.fill('input[name="usuario"]', 'idbjovem');
+    await page.fill('input[name="senha"]', 'idbjovem');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await expect(page).toHaveURL(/\/admin$/);
   });
 });
 

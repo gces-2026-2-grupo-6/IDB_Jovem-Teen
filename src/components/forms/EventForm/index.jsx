@@ -54,9 +54,14 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     image: initialData.linkImagem || "",
   });
 
-  /* Ids dos convidados vinculados. O seletor carrega os já vinculados quando o
-     evento existe; num evento novo a lista começa vazia. */
-  const [convidadosIds, setConvidadosIds] = useState([]);
+  /* Ids dos convidados vinculados.
+
+     Começa em `null`, não em lista vazia, e isso é deliberado: o seletor carrega
+     os vinculados de forma assíncrona, e uma lista vazia significaria "remova
+     todos". Quem salvasse antes do carregamento terminar desvincularia todos os
+     convidados do evento sem perceber. `null` significa "ainda não sei", e a
+     sincronização não mexe em nada nesse caso. */
+  const [convidadosIds, setConvidadosIds] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -352,7 +357,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         {/* Palestrantes — cada palestrante tem nome e a sua própria foto (link do Drive) */}
         <ConvidadosPicker
           eventId={eventId}
-          selecionados={convidadosIds}
+          selecionados={convidadosIds ?? []}
           onChange={setConvidadosIds}
         />
 

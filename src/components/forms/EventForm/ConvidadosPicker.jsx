@@ -42,9 +42,9 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
         ]);
         if (!ativo) return;
         setConvidados(catalogo);
-        if (vinculados.length > 0) {
-          onChange(vinculados.map((c) => c.id));
-        }
+        /* Confirma o que veio mesmo quando não há ninguém vinculado: é isso que
+           tira o formulário do estado "ainda não sei" e libera a sincronização. */
+        onChange(vinculados.map((c) => c.id));
       } finally {
         if (ativo) setCarregando(false);
       }

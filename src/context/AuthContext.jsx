@@ -78,7 +78,10 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem(TOKEN_KEY, token);
       setUser(u);
-      return { success: true };
+      /* Devolve o destino junto: quem só administra inscrições não tem o que
+         ver no painel inicial, e o estado do contexto ainda não atualizou neste
+         instante para a tela consultar sozinha. */
+      return { success: true, rotaInicial: rotaInicialDoPainel(u.roles) };
     } catch (error) {
       const desc = error?.response?.data?.error_description;
       const msg =

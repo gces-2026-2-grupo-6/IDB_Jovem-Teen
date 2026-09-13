@@ -23,7 +23,7 @@ export default function Login() {
     const result = await login(form.usuario, form.senha);
     setLoading(false);
     if (result.success) {
-      navigate("/admin");
+      navigate(result.rotaInicial || "/admin");
     } else {
       setError(result.error);
     }

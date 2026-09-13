@@ -190,8 +190,10 @@ test.describe('Admin - Gerenciamento de Eventos CRUD', () => {
     await expect(page.getByText('Total de Voluntários', { exact: true })).toBeVisible();
     await expect(page.getByText('Local', { exact: true })).toBeVisible();
     await expect(page.getByText('Data', { exact: true })).toBeVisible();
-    await expect(page.getByText('Palestrantes', { exact: true })).toBeVisible();
-    await expect(page.getByText('Bandas', { exact: true })).toBeVisible();
+    /* Convidados saíram da tabela e passaram a ter um card próprio, que
+       vincula e desvincula na hora (US06). As linhas estáticas foram removidas
+       porque mostravam um estado que não acompanhava as ações do card. */
+    await expect(page.getByRole('heading', { name: 'Convidados' })).toBeVisible();
 
     // Testar volta
     const btnVoltar = page.getByTitle('Voltar');
@@ -551,9 +553,9 @@ test.describe('Admin - Cobertura Extra de Branches', () => {
     await expect(page.getByRole('heading', { name: 'Detalhes do Evento' })).toBeVisible();
     await expect(page.getByText('Evento Null Fields')).toBeVisible();
 
-    // descrição, local, palestrantes e bandas devem mostrar "—"
+    // descrição e local devem mostrar "—" (palestrantes e bandas viraram card)
     const dashes = page.getByText('—');
-    expect(await dashes.count()).toBeGreaterThanOrEqual(4);
+    expect(await dashes.count()).toBeGreaterThanOrEqual(2);
   });
 });
 

@@ -325,6 +325,37 @@ test.describe('Reaproveitamento entre eventos', () => {
     await expect(page.locator('input[name="title"]')).toHaveValue('Conferência Nacional');
   });
 
+  /* Regressão: o seletor carrega os vinculados de forma assíncrona. Se o
+     formulário tratasse "ainda não carregou" como "nenhum convidado", salvar
+     antes do carregamento terminar desvincularia todos — perda silenciosa. */
+  test('salvar antes do seletor carregar não desvincula ninguém', async ({ page }) => {
+    let apagou = 0;
+
+    /* Segura a leitura dos vinculados para garantir que o salvamento acontece
+       com o seletor ainda carregando. */
+    await page.route(/\/evento\/\d+\/participantes$/, async (route) => {
+      if (route.request().method() === 'GET') {
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+      return route.fallback();
+    });
+    await page.route(/\/evento\/\d+\/participantes\/\d+$/, (route) => {
+      if (route.request().method() === 'DELETE') apagou += 1;
+      return route.fallback();
+    });
+
+    await page.goto('/admin/eventos/1/editar');
+    await page.getByRole('button', { name: 'Salvar' }).waitFor();
+    await page.fill('input[name="title"]', 'Conferência Nacional renomeada');
+    await page.getByRole('button', { name: 'Salvar' }).click();
+
+    await expect(page).toHaveURL(/\/admin\/eventos$/);
+
+    expect(apagou).toBe(0);
+    /* O convidado que já estava no evento continua lá. */
+    expect(estado.vinculos[1]).toContain(1);
+  });
+
   test('desvincular na tela de detalhe do evento vale na hora', async ({ page }) => {
     await page.goto('/admin/eventos/1');
 

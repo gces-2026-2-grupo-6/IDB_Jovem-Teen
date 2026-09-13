@@ -44,7 +44,10 @@ export async function loginComPapeis(page, roles) {
 
 // Credenciais válidas: idbjovem/idbjovem. Qualquer outra → 401 (Keycloak
 // responde "Invalid user credentials").
-export async function mockKeycloakLogin(page) {
+//
+// `roles` define os papéis do token devolvido, para exercitar o login de cada
+// perfil da US03. Sem argumento, entra como superadministrador.
+export async function mockKeycloakLogin(page, roles) {
   await page.route("**/protocol/openid-connect/token", (route) => {
     const params = new URLSearchParams(route.request().postData() || "");
     const ok =
@@ -62,7 +65,7 @@ export async function mockKeycloakLogin(page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        access_token: fakeAdminToken(),
+        access_token: roles ? fakeAdminToken(roles) : fakeAdminToken(),
         token_type: "Bearer",
         expires_in: 3600,
       }),
