@@ -50,6 +50,21 @@ test.describe('Página Inicial (Home)', () => {
     await expect(page.getByRole('button', { name: /Líderes Atuais/i })).toBeVisible();
   });
 
+  test('LideresSection - deve exibir líderes vindos da API', async ({ page }) => {
+    const secao = page.locator('section.bg-\\[\\#D5650D\\]');
+    await secao.scrollIntoViewIfNeeded();
+
+    // Atuais: os dois nacionais em destaque + o regional (seed do mock)
+    const nomesAtuais = await secao.locator('h4').allInnerTexts();
+    expect(nomesAtuais).toEqual(['João Diretor', 'Maria Diretora', 'Pedro Líder']);
+
+    // Galeria: só os anteriores de cargo nacional, com período de gestão
+    await secao.getByRole('button', { name: /Galeria de Diretores/i }).click();
+    const nomesAnteriores = await secao.locator('h4').allInnerTexts();
+    expect(nomesAnteriores).toEqual(['Antiga Diretora', 'Antigo Diretor']);
+    await expect(secao.getByText('Gestão 2020 – 2023')).toBeVisible();
+  });
+
   test('EventosSection - deve exibir a programação com carrossel', async ({ page }) => {
     const titulo = page.getByRole('heading', { name: /PROGRAMAÇÃO/i });
     await expect(titulo).toBeVisible();
