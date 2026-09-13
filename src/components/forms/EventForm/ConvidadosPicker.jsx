@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Mic, Plus, X, Search, UserPlus } from "lucide-react";
 import {
@@ -30,6 +30,11 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
   const [erroNovo, setErroNovo] = useState(null);
   const [salvandoNovo, setSalvandoNovo] = useState(false);
 
+  /* Marca que a pessoa já escolheu alguém. O carregamento inicial é assíncrono
+     e não pode sobrescrever uma escolha feita enquanto ele acontecia — a busca
+     fica desabilitada nesse intervalo, mas o cadastro rápido não. */
+  const jaEscolheu = useRef(false);
+
   /* Carrega o catálogo e, na edição, quem já está vinculado ao evento. */
   useEffect(() => {
     let ativo = true;
@@ -43,8 +48,11 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
         if (!ativo) return;
         setConvidados(catalogo);
         /* Confirma o que veio mesmo quando não há ninguém vinculado: é isso que
-           tira o formulário do estado "ainda não sei" e libera a sincronização. */
-        onChange(vinculados.map((c) => c.id));
+           tira o formulário do estado "ainda não sei" e libera a sincronização.
+           Se a pessoa já escolheu alguém nesse meio tempo, a escolha dela vence. */
+        if (!jaEscolheu.current) {
+          onChange(vinculados.map((c) => c.id));
+        }
       } finally {
         if (ativo) setCarregando(false);
       }
@@ -67,11 +75,15 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
   }, [convidados, selecionados, termo]);
 
   const adicionar = (id) => {
+    jaEscolheu.current = true;
     if (!selecionados.includes(id)) onChange([...selecionados, id]);
     setTermo("");
   };
 
-  const remover = (id) => onChange(selecionados.filter((outro) => outro !== id));
+  const remover = (id) => {
+    jaEscolheu.current = true;
+    onChange(selecionados.filter((outro) => outro !== id));
+  };
 
   const criarEVincular = async () => {
     setErroNovo(null);
@@ -82,6 +94,7 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
         setErroNovo(resultado.error);
         return;
       }
+      jaEscolheu.current = true;
       setConvidados((prev) => [...prev, resultado.speaker]);
       onChange([...selecionados, resultado.speaker.id]);
       setNovo({ name: "", role: FUNCOES[0] });
