@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+// eslint-disable-next-line no-unused-vars -- motion is used via <motion.div>/<motion.span> below; core no-unused-vars doesn't track that without eslint-plugin-react
 import { motion, stagger, useAnimate, useInView } from "motion/react";
 import { useEffect } from "react";
 

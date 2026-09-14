@@ -31,7 +31,7 @@ export default function AdminVoluntarioDetails() {
         let ev;
         try {
           ev = await fetchEventById(eventId);
-        } catch (e) {
+        } catch {
           ev = null;
         }
         if (!active) return;

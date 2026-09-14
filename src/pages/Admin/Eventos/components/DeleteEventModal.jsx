@@ -1,7 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import Modal from "../../../../components/ui/Modal";
 
-export default function DeleteEventModal({ isOpen, onClose, onConfirm, eventTitle }) {
+export default function DeleteEventModal({ isOpen, onClose, onConfirm }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-xl max-w-sm w-full text-center">

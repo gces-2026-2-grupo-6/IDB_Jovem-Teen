@@ -51,6 +51,7 @@ export function VolunteerEventCard({ event }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars -- Icon is used as a JSX tag below; core no-unused-vars doesn't track that without eslint-plugin-react
 export function StatCard({ icon: Icon, label, value, color }) {
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow duration-200">
