@@ -1,0 +1,63 @@
+name: Relato de Defeito
+description: Reporte um comportamento incorreto na aplicação
+title: "[Defeito]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: O que aconteceu
+      description: Descreva o comportamento incorreto observado.
+      placeholder: "Ex.: A foto do líder aparece duplicada na página inicial."
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que era esperado
+      description: Qual deveria ser o comportamento correto.
+    validations:
+      required: true
+
+  - type: textarea
+    id: passos
+    attributes:
+      label: Passos para reproduzir
+      description: Liste o passo a passo para reproduzir o problema.
+      placeholder: |
+        1. Acesse ...
+        2. Clique em ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Dispositivo e navegador
+      description: Modelo do celular/computador, sistema operacional e navegador usados.
+      placeholder: "Ex.: iPhone 13, iOS 17, Safari"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequencia
+    attributes:
+      label: Frequência
+      description: Com que frequência o problema acontece?
+      options:
+        - Sempre
+        - Às vezes
+        - Aconteceu uma vez
+        - Não sei
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidencias
+    attributes:
+      label: Prints ou vídeos
+      description: Anexe capturas de tela ou gravações, se tiver.
+    validations:
+      required: false
