@@ -191,6 +191,15 @@ test.describe('Admin - Diretores & Líderes CRUD', () => {
     await expect(page.getByText('Pedro Líder')).toHaveCount(0);
   });
 
+  test('não exibe diretor antigo de cargo regional na galeria de anteriores (só cargo nacional)', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Diretores anteriores' }).click();
+
+    // Rafael Regional Antigo (seed: regiao "Região Sul", is_antigo true) não é
+    // nacional, então não deve entrar na galeria — só os 2 nacionais aparecem.
+    await expect(page.getByTestId('leader-card')).toHaveCount(2);
+    await expect(page.getByText('Rafael Regional Antigo')).toHaveCount(0);
+  });
+
   test('deve exibir estado vazio quando a API falhar', async ({ page }) => {
     await page.route(/\/lider\/?(\?.*)?$/, (route) => route.abort('failed'));
     await page.goto('/admin/lideres', { waitUntil: 'domcontentloaded' });

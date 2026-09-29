@@ -146,6 +146,8 @@ function makeSeed() {
       { lider_id: 303, nome: "Pedro Líder", cargo: "Diretor Regional de Jovens", regiao: "Região Sul", ordem: 3, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider303=w1200", bio: "", redes_sociais: "", gestao: "" },
       { lider_id: 304, nome: "Antiga Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 1, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider304=w1200", bio: "", redes_sociais: "", gestao: "2020 – 2023" },
       { lider_id: 305, nome: "Antigo Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 2, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider305=w1200", bio: "", redes_sociais: "", gestao: "2017 – 2020" },
+      // Antigo de cargo regional: não entra na galeria de anteriores, que contempla apenas o cargo nacional (US05).
+      { lider_id: 306, nome: "Rafael Regional Antigo", cargo: "Diretor Regional de Jovens", regiao: "Região Sul", ordem: 3, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider306=w1200", bio: "", redes_sociais: "", gestao: "2015 – 2018" },
     ],
     products: [
       {
