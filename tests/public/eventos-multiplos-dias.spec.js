@@ -13,6 +13,16 @@ const shiftDays = (dias) => {
 const iso = (d, hora) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${hora}:00`;
 const br = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 
+/* Um dia futuro sem sair do mês corrente: o calendário da home só mostra o
+   mês corrente, então "hoje + N" cruza a virada do mês nos últimos dias de
+   cada mês e o evento simplesmente some da tela. */
+const diaFuturoNoMesAtual = (diasAFrente) => {
+  const hoje = new Date();
+  const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  const dia = Math.min(hoje.getDate() + diasAFrente, ultimoDiaDoMes);
+  return new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+};
+
 function evento({ id, nome, inicio, fim, datas = null }) {
   return {
     evento_id: id,
@@ -116,7 +126,7 @@ test.describe('Evento em múltiplos dias — calendário da home', () => {
   });
 
   test('evento de um dia mostra data única, sem faixa', async ({ page }) => {
-    const dia = shiftDays(2);
+    const dia = diaFuturoNoMesAtual(2);
     await serveEvents(page, [
       evento({ id: 5003, nome: 'Culto Especial', inicio: iso(dia, '19:00'), fim: iso(dia, '22:00') }),
     ]);
