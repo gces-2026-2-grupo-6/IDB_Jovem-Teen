@@ -88,6 +88,33 @@ test.describe('Página de Detalhes do Evento', () => {
     }
   });
 
+  test('deve separar os convidados por função e ocultar grupo vazio', async ({ page }) => {
+    // Sobrescreve os participantes do evento 1: só pregador e banda, sem
+    // nenhum "convidado" — o grupo Convidados não deve nem aparecer.
+    await page.route(/\/evento\/1\/participantes$/, (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { participante_id: 901, nome: 'Pra. Função Teste', profissao: 'Pregador', link_foto: '' },
+          { participante_id: 902, nome: 'Banda Função Teste', profissao: 'Banda', link_foto: '' },
+        ]),
+      });
+    });
+
+    await page.goto('/eventos/1-retiro-de-verao');
+
+    const tituloPalestrantes = page.getByRole('heading', { name: 'Palestrantes', level: 2 });
+    const tituloBandas = page.getByRole('heading', { name: 'Bandas', level: 2 });
+    await expect(tituloPalestrantes).toBeVisible();
+    await expect(tituloBandas).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Convidados', level: 2 })).toHaveCount(0);
+
+    await expect(page.getByText('Pra. Função Teste')).toBeVisible();
+    await expect(page.getByText('Banda Função Teste')).toBeVisible();
+  });
+
   test('deve renderizar a programação com horários e atividades', async ({ page }) => {
     await page.goto('/eventos/1-retiro-de-verao');
 
