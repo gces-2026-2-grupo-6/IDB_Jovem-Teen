@@ -8,7 +8,7 @@ import galeria3 from "../../assets/images/galeria3.png";
 import galeria4 from "../../assets/images/galeria4.png";
 
 // =====================================================
-// FOTOS FICTÍCIAS PARA TESTE
+// FOTOS FICTÍCIAS PARA TESTE/FOTOS MOCKADAS
 // =====================================================
 
 const mockPhotos = [
@@ -286,4 +286,6 @@ export default function Galeria() {
 
     </main>
   );
+
+
 }
