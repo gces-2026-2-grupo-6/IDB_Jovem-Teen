@@ -94,11 +94,14 @@ test.describe('Página de Detalhes do Evento', () => {
     const scheduleSection = page.locator('section').filter({ hasText: 'Programação do evento' });
     await expect(scheduleSection).toBeVisible();
 
-    // evento 1 tem 4 atividades
-    await expect(scheduleSection.getByText('Abertura')).toBeVisible();
-    await expect(scheduleSection.getByText('Louvor')).toBeVisible();
-    await expect(scheduleSection.getByText('Ministração')).toBeVisible();
-    await expect(scheduleSection.getByText('Encerramento')).toBeVisible();
+    /* evento 1 tem 4 atividades. Busca pelo título da atividade, e não por
+       texto solto: "Louvor" também aparece na descrição ("Momento de louvor"),
+       e a busca por texto casava com os dois. */
+    for (const atividade of ['Abertura', 'Louvor', 'Ministração', 'Encerramento']) {
+      await expect(
+        scheduleSection.getByRole('heading', { name: atividade, exact: true })
+      ).toBeVisible();
+    }
 
     // Verifica os horários
     await expect(scheduleSection.getByText('17:00 - 18:00')).toBeVisible();
