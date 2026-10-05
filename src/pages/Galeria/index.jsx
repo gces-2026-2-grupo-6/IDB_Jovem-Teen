@@ -17,28 +17,28 @@ const mockPhotos = [
     event: "Festival de Inverno",
     location: "Brasília - DF",
     image:
-      "galeria1",
+      galeria1,
   },
   {
     id: "mock-2",
     event: "Festival de Inverno",
     location: "Brasília - DF",
     image:
-      "galeria2",
+      galeria2,
   },
   {
     id: "mock-3",
     event: "Festival de Inverno",
     location: "Brasília - DF",
     image:
-      "galeria3",
+      galeria3,
   },
   {
     id: "mock-4",
     event: "Festival de Inverno",
     location: "Brasília - DF",
     image:
-      "galeria4",
+      galeria4,
   },
 
   {
@@ -46,21 +46,21 @@ const mockPhotos = [
     event: "Feira Cultural",
     location: "Goiânia - GO",
     image:
-      "galeria1",
+      galeria1,
   },
   {
     id: "mock-6",
     event: "Feira Cultural",
     location: "Goiânia - GO",
     image:
-      "galeria2",
+      galeria2,
   },
   {
     id: "mock-7",
     event: "Feira Cultural",
     location: "Goiânia - GO",
     image:
-      "galeria3",
+      galeria3,
   },
 
   {
@@ -68,21 +68,21 @@ const mockPhotos = [
     event: "Evento Esportivo",
     location: "São Paulo - SP",
     image:
-      "galeria4",
+      galeria4,
   },
   {
     id: "mock-9",
     event: "Evento Esportivo",
     location: "São Paulo - SP",
     image:
-      "galeria1",
+      galeria1,
   },
   {
     id: "mock-10",
     event: "Evento Esportivo",
     location: "São Paulo - SP",
     image:
-      "galeria2",
+      galeria2,
   },
 ];
 
