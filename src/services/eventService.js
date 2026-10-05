@@ -103,6 +103,16 @@ function adaptEvent(apiEvent) {
     latitude: apiEvent.local_latitude,
     longitude: apiEvent.local_longitude,
     linkGaleria: apiEvent.link_galeria || "",
+    /* Dois fluxos de inscrição (US09): quem vai participar e quem vai
+       trabalhar no evento. O link de voluntários é o campo que já existia.
+
+       O de participantes é um contrato ASSUMIDO: a tabela `evento` tem uma
+       única coluna `formulario_link`, hoje usada pelo voluntariado. Como os
+       schemas do back-end não usam `extra="forbid"`, o campo novo é aceito e
+       ignorado — nada quebra, mas o link não sobrevive a um recarregamento
+       até que o back-end o persista. Se fechar com outro nome, só esta linha
+       e a de `toApiEvent` mudam. */
+    linkFormularioParticipantes: apiEvent.formulario_link_participantes || "",
     linkFormularioVoluntarios: apiEvent.formulario_link || "",
     calendarioEventoId: apiEvent.calendario_evento_id || null,
     tipoEvento: apiEvent.tipo_evento || "",
@@ -137,6 +147,8 @@ function toApiEvent(form) {
     datas: dias.length > 0 ? dias : null,
     link_galeria: form.linkGaleria || null,
     formulario_link: form.linkFormularioVoluntarios || null,
+    /* Contrato assumido — ver o comentário em `adaptEvent`. */
+    formulario_link_participantes: form.linkFormularioParticipantes || null,
     link_imagem: (form.image && form.image.trim()) || null,
   };
 }

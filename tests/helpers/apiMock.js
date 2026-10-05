@@ -33,6 +33,10 @@ function makeSeed() {
         local_longitude: -34.9,
         link_galeria: "pasta-retiro",
         formulario_link: "https://forms.gle/retiro",
+        /* Fluxo de participantes da US09. Campo ainda não persistido pelo
+           back-end real — aqui ele existe para exercitar o contrato que o
+           front já envia e lê. */
+        formulario_link_participantes: "https://forms.gle/retiro-participantes",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -46,7 +50,10 @@ function makeSeed() {
         local_latitude: -8.1,
         local_longitude: -35.0,
         link_galeria: "",
+        /* Evento sem nenhum dos dois links → exercita os estados "fluxo não
+           aberto" nas telas pública e administrativa. */
         formulario_link: "",
+        formulario_link_participantes: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -61,6 +68,7 @@ function makeSeed() {
         local_longitude: -34.88,
         link_galeria: "pasta-congresso",
         formulario_link: "https://forms.gle/congresso",
+        formulario_link_participantes: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -76,6 +84,7 @@ function makeSeed() {
         local_longitude: null,
         link_galeria: "",
         formulario_link: "",
+        formulario_link_participantes: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -212,6 +221,27 @@ function makeSeed() {
         resposta_id: 'r9999',
         link_resposta: '',
       }
+    ],
+    /* Inscrições do fluxo de participantes (US09), que é separado do de
+       voluntários: não tem status, porque ninguém aprova um participante.
+       Só o evento 1 tem inscritos — o 2 exercita a listagem vazia. */
+    inscricoesParticipantes: [
+      {
+        evento_id: 1,
+        inscricao_id: 500,
+        nome: "Carla Mendes",
+        email: "carla@example.com",
+        resposta_id: "p1",
+        link_resposta: "https://forms.gle/resposta-participante1",
+      },
+      {
+        evento_id: 1,
+        inscricao_id: 501,
+        nome: "Rafael Dias",
+        email: "rafael@example.com",
+        resposta_id: "p2",
+        link_resposta: "",
+      },
     ],
     nextEventId: 1000,
     nextActivityId: 2000,
@@ -381,6 +411,17 @@ export async function setupApiMock(page) {
         const eventId = Number(m[1]);
         return route.fulfill(
           json(db.inscricoes.filter((i) => i.evento_id === eventId))
+        );
+      }
+      /* Fluxo de participantes (US09). O back-end real ainda não expõe este
+         caminho — quando não existe, o 404 vira o aviso de listagem
+         indisponível na tela. O mock o implementa para que o caminho feliz
+         também tenha teste; o teste do 404 sobrescreve esta rota. */
+      m = path.match(/\/formulario\/eventos\/(\d+)\/inscricoes-participantes$/);
+      if (m) {
+        const eventId = Number(m[1]);
+        return route.fulfill(
+          json(db.inscricoesParticipantes.filter((i) => i.evento_id === eventId))
         );
       }
 
@@ -562,6 +603,7 @@ export async function setupApiMock(page) {
             local_longitude: body.local_longitude,
             link_galeria: body.link_galeria || "",
             formulario_link: body.formulario_link || "",
+            formulario_link_participantes: body.formulario_link_participantes || "",
             link_imagem: body.link_imagem || "",
             calendario_evento_id: null,
           };

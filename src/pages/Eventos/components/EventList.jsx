@@ -5,12 +5,20 @@ import { formatEventDates, isMultiDay, toFormResponseUrl } from "../../../servic
 export default function EventList({ events }) {
   const navigate = useNavigate();
 
-  const handleInscrever = (event) => {
-    if (event.linkFormularioVoluntarios) {
-      window.open(toFormResponseUrl(event.linkFormularioVoluntarios), "_blank", "noopener,noreferrer");
+  /* "Inscreva-se" é o fluxo de participante (US09) — antes este botão abria o
+     formulário de voluntariado, que é outra coisa. Sem link de participante
+     cadastrado, leva à página do evento: lá a pessoa vê o que de fato existe,
+     inclusive o voluntariado, se for o único fluxo aberto. */
+  const inscreverParticipante = (event) => {
+    if (event.linkFormularioParticipantes) {
+      window.open(toFormResponseUrl(event.linkFormularioParticipantes), "_blank", "noopener,noreferrer");
     } else {
       navigate(`/eventos/${event.slug}`);
     }
+  };
+
+  const inscreverVoluntario = (event) => {
+    window.open(toFormResponseUrl(event.linkFormularioVoluntarios), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -51,20 +59,31 @@ export default function EventList({ events }) {
               </div>
             </div>
 
-            {/* Botões */}
-            <div className="flex gap-2">
-              <Link
-                to={`/eventos/${event.slug}`}
-                className="flex items-center gap-1.5 text-sm font-semibold text-[#1E1E1E] border border-[#1E1E1E]/15 rounded-lg px-4 py-2 hover:border-[#FF6D2C] hover:text-[#FF6D2C] transition-colors"
-              >
-                Veja mais →
-              </Link>
-              <button
-                onClick={() => handleInscrever(event)}
-                className="flex-1 text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
-              >
-                Inscreva-se
-              </button>
+            {/* Botões — o voluntariado só aparece nos eventos que abriram
+                esse fluxo, para não prometer o que não existe. */}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Link
+                  to={`/eventos/${event.slug}`}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-[#1E1E1E] border border-[#1E1E1E]/15 rounded-lg px-4 py-2 hover:border-[#FF6D2C] hover:text-[#FF6D2C] transition-colors"
+                >
+                  Veja mais →
+                </Link>
+                <button
+                  onClick={() => inscreverParticipante(event)}
+                  className="flex-1 text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
+                >
+                  Inscreva-se
+                </button>
+              </div>
+              {event.linkFormularioVoluntarios && (
+                <button
+                  onClick={() => inscreverVoluntario(event)}
+                  className="w-full text-sm font-semibold border-2 border-[#FF6D2C] text-[#FF6D2C] hover:bg-[#FF6D2C] hover:text-white rounded-lg px-4 py-2 transition-colors"
+                >
+                  Seja Voluntário
+                </button>
+              )}
             </div>
           </div>
         </div>

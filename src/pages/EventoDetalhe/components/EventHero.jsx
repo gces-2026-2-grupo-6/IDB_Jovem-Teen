@@ -7,6 +7,10 @@ import {
   toFormResponseUrl,
 } from "../../../services/eventService";
 
+function abrirFormulario(link) {
+  window.open(toFormResponseUrl(link), "_blank", "noopener,noreferrer");
+}
+
 export default function EventHero({ event }) {
   const navigate = useNavigate();
   const googleCalendarUrl = buildGoogleCalendarUrl(event);
@@ -73,19 +77,30 @@ export default function EventHero({ event }) {
                 Adicionar ao Google Calendar
               </a>
             )}
-            {/* Botão de voluntário */}
-            <div className="mt-2">
-              <button
-                onClick={() => {
-                  if (event.linkFormularioVoluntarios) {
-                    window.open(toFormResponseUrl(event.linkFormularioVoluntarios), "_blank", "noopener,noreferrer");
-                  }
-                }}
-                className="flex-1 text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
-              >
-                Seja Voluntário
-              </button>
-            </div>
+            {/* Inscrição — dois fluxos distintos (US09): participar do evento
+                e trabalhar nele. Cada botão só existe quando a administradora
+                cadastrou o link daquele fluxo; antes, "Seja Voluntário"
+                aparecia sempre e não fazia nada nos eventos sem formulário. */}
+            {(event.linkFormularioParticipantes || event.linkFormularioVoluntarios) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {event.linkFormularioParticipantes && (
+                  <button
+                    onClick={() => abrirFormulario(event.linkFormularioParticipantes)}
+                    className="text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
+                  >
+                    Inscreva-se
+                  </button>
+                )}
+                {event.linkFormularioVoluntarios && (
+                  <button
+                    onClick={() => abrirFormulario(event.linkFormularioVoluntarios)}
+                    className="text-sm font-semibold border-2 border-[#FF6D2C] text-[#FF6D2C] hover:bg-[#FF6D2C] hover:text-white rounded-lg px-4 py-2 transition-colors"
+                  >
+                    Seja Voluntário
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Lado direito — imagem */}
