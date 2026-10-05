@@ -18,6 +18,38 @@ export const REGIOES = [
   "Região Sul",
 ];
 
+// A API guarda as redes como objeto {"rede": "link"}; o painel edita como texto
+// livre separado por vírgula ("@perfil, youtube.com/canal").
+const REDES_CONHECIDAS = [
+  ["instagram", /instagram\.com|^@/i],
+  ["youtube", /youtube\.com|youtu\.be/i],
+  ["tiktok", /tiktok\.com/i],
+  ["facebook", /facebook\.com|fb\.com/i],
+  ["x", /twitter\.com|x\.com/i],
+  ["linkedin", /linkedin\.com/i],
+];
+
+export function socialTextToObject(text) {
+  const redes = {};
+  String(text || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((link) => {
+      const base = REDES_CONHECIDAS.find(([, padrao]) => padrao.test(link))?.[0] ?? "site";
+      let chave = base;
+      for (let n = 2; chave in redes; n++) chave = `${base}_${n}`;
+      redes[chave] = link;
+    });
+  return Object.keys(redes).length > 0 ? redes : null;
+}
+
+export function socialObjectToText(redes) {
+  if (!redes) return "";
+  if (typeof redes === "string") return redes;
+  return Object.values(redes).filter(Boolean).join(", ");
+}
+
 function toLeader(api) {
   if (!api) return null;
   const regiao = api.regiao ?? "";
@@ -29,8 +61,8 @@ function toLeader(api) {
     image: toDriveImageUrl(api.imagem_url),
     imageRaw: api.imagem_url ?? "",
     region: regiao,
-    bio: api.bio ?? "",
-    socialLinks: api.redes_sociais ?? "",
+    bio: api.mini_biografia ?? "",
+    socialLinks: socialObjectToText(api.redes_sociais),
     term: api.gestao ?? "",
     isPast: !!api.is_antigo,
     order: Number(api.ordem ?? 0),
@@ -45,8 +77,8 @@ function toLiderPayload(form) {
     is_antigo: !!form.isPast,
     ordem: Number(form.order) || 0,
     regiao: form.region || "",
-    bio: form.bio?.trim() || "",
-    redes_sociais: form.socialLinks?.trim() || "",
+    mini_biografia: form.bio?.trim() || "",
+    redes_sociais: socialTextToObject(form.socialLinks),
     gestao: form.isPast ? form.term?.trim() || "" : "",
   };
 }
