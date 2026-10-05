@@ -65,8 +65,8 @@ test.describe('Admin - Diretores & Líderes CRUD', () => {
       nome: 'Líder Playwright',
       cargo: 'Diretor Regional de Jovens',
       regiao: 'Região Nordeste',
-      redes_sociais: '@lider.playwright',
-      bio: 'Bio de teste E2E.',
+      redes_sociais: { instagram: '@lider.playwright' },
+      mini_biografia: 'Bio de teste E2E.',
       is_antigo: false,
     });
     expect(body.imagem_url).toContain('abc123');

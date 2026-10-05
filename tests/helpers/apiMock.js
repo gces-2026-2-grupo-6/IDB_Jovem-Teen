@@ -141,11 +141,11 @@ function makeSeed() {
     },
     // Líderes (organograma da Home e CRUD do painel)
     lideres: [
-      { lider_id: 301, nome: "João Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 1, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider301=w1200", bio: "Bio do João.", redes_sociais: "@joao", gestao: "" },
-      { lider_id: 302, nome: "Maria Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 2, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider302=w1200", bio: "", redes_sociais: "", gestao: "" },
-      { lider_id: 303, nome: "Pedro Líder", cargo: "Diretor Regional de Jovens", regiao: "Região Sul", ordem: 3, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider303=w1200", bio: "", redes_sociais: "", gestao: "" },
-      { lider_id: 304, nome: "Antiga Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 1, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider304=w1200", bio: "", redes_sociais: "", gestao: "2020 – 2023" },
-      { lider_id: 305, nome: "Antigo Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 2, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider305=w1200", bio: "", redes_sociais: "", gestao: "2017 – 2020" },
+      { lider_id: 301, nome: "João Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 1, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider301=w1200", mini_biografia: "Bio do João.", redes_sociais: { instagram: "@joao" }, gestao: "" },
+      { lider_id: 302, nome: "Maria Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 2, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider302=w1200", mini_biografia: null, redes_sociais: null, gestao: "" },
+      { lider_id: 303, nome: "Pedro Líder", cargo: "Diretor Regional de Jovens", regiao: "Região Sul", ordem: 3, is_antigo: false, imagem_url: "https://lh3.googleusercontent.com/d/lider303=w1200", mini_biografia: null, redes_sociais: null, gestao: "" },
+      { lider_id: 304, nome: "Antiga Diretora", cargo: "Diretora Nacional de Adolescentes", regiao: "Nacional", ordem: 1, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider304=w1200", mini_biografia: null, redes_sociais: null, gestao: "2020 – 2023" },
+      { lider_id: 305, nome: "Antigo Diretor", cargo: "Diretor Nacional de Jovens", regiao: "Nacional", ordem: 2, is_antigo: true, imagem_url: "https://lh3.googleusercontent.com/d/lider305=w1200", mini_biografia: null, redes_sociais: null, gestao: "2017 – 2020" },
     ],
     products: [
       {
@@ -301,9 +301,9 @@ export async function setupApiMock(page) {
             is_antigo: !!body.is_antigo,
             ordem: body.ordem ?? 0,
             regiao: body.regiao || "",
-            bio: body.bio || "",
-            redes_sociais: body.redes_sociais || "",
-            gestao: body.gestao || "",
+            mini_biografia: body.mini_biografia || null,
+            redes_sociais: body.redes_sociais || null,
+            gestao: body.gestao || null,
           };
           db.lideres.push(created);
           return route.fulfill(json(created, 201));

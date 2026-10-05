@@ -8,10 +8,10 @@ import { api } from "../api";
  * @property {string} imagem_url - link de compartilhar do Drive (cru)
  * @property {boolean} is_antigo - marcação manual de "diretor anterior"
  * @property {number} ordem
- * @property {string} [regiao] - ainda não persistido pelo back-end
- * @property {string} [bio] - ainda não persistido pelo back-end
- * @property {string} [redes_sociais] - ainda não persistido pelo back-end
- * @property {string} [gestao] - ainda não persistido pelo back-end
+ * @property {string|null} [regiao]
+ * @property {string|null} [mini_biografia]
+ * @property {Object<string, string>|null} [redes_sociais] - ex.: {"instagram": "@perfil"}
+ * @property {string|null} [gestao] - período exibido na galeria de diretores
  */
 
 /**
@@ -22,8 +22,8 @@ import { api } from "../api";
  * @property {boolean} [is_antigo]
  * @property {number} [ordem]
  * @property {string} [regiao]
- * @property {string} [bio]
- * @property {string} [redes_sociais]
+ * @property {string} [mini_biografia]
+ * @property {Object<string, string>|null} [redes_sociais]
  * @property {string} [gestao]
  */
 
