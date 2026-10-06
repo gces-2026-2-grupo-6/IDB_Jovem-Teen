@@ -4,6 +4,7 @@ import { Building2, Clock } from "lucide-react";
 import EventFilters from "./components/EventFilters";
 import EventSearch from "./components/EventSearch";
 import EventList from "./components/EventList";
+import PastEvents from "./components/PastEvents";
 import EmptyEvents from "./components/EmptyEvents";
 import {
   fetchAllEvents,
@@ -271,6 +272,10 @@ export default function Eventos() {
           )}
         </div>
       </section>
+
+      {/* Histórico (US15): o que já aconteceu vem depois da agenda, e a seção
+          se esconde sozinha quando não há evento encerrado. */}
+      <PastEvents />
     </main>
   );
 }
