@@ -394,6 +394,35 @@ export async function fetchEventGallery(eventId) {
   }
 }
 
+/* Histórico de eventos (US15): os que já terminaram, do mais recente para o
+   mais antigo, cada um com a capa e a contagem de fotos do seu álbum.
+
+   Até aqui um evento encerrado sumia do site público — a agenda, o mapa e a
+   home filtram todos por `isOngoingOrFuture`. As fotos existiam na galeria,
+   mas soltas do evento que as originou.
+
+   A capa é a primeira foto do álbum; sem álbum, cai na imagem do evento, a
+   mesma que a agenda já usa. Só busca a galeria de quem tem `linkGaleria`,
+   para não disparar uma chamada por evento sem necessidade. */
+export async function fetchPastEventsWithPhotos() {
+  const events = await fetchAllEvents();
+  const passados = events
+    .filter((e) => getEventStatus(e) === "past")
+    .sort((a, b) => dateSortKey(b.endDate || b.date) - dateSortKey(a.endDate || a.date));
+
+  return Promise.all(
+    passados.map(async (ev) => {
+      const fotos = ev.linkGaleria ? await fetchEventGallery(ev.id) : [];
+      return {
+        ...ev,
+        fotos,
+        cover: fotos[0]?.url || ev.image,
+        totalFotos: fotos.length,
+      };
+    })
+  );
+}
+
 export async function fetchAggregatedGallery() {
   const events = await fetchAllEvents();
   const comGaleria = events.filter((e) => e.linkGaleria);
