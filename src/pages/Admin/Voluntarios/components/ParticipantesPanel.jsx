@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
-import { Users, ExternalLink, PlugZap } from "lucide-react";
-import {
-  fetchParticipantesByEvent,
-  ListagemIndisponivelError,
-} from "../../../../services/inscricaoService";
+import { Users, ExternalLink } from "lucide-react";
+import { fetchParticipantesByEvent } from "../../../../services/inscricaoService";
 import AdminTable from "../../components/AdminTable";
 import Loading from "../../../../components/ui/Loading";
 import EmptyState from "../../../../components/ui/EmptyState";
@@ -21,16 +18,11 @@ const GRID = "1fr 1fr 130px";
 /* Listagem do fluxo de participantes — quem vai ao evento.
 
    Sem status: ninguém aprova uma inscrição de participante. É o que separa
-   esta tabela da de voluntários, que mantém pendente/aprovado/reprovado.
-
-   A listagem depende de um endpoint que o back-end ainda não expõe. Enquanto
-   não existir, a chamada responde 404 e a tela diz isso com todas as letras,
-   em vez de fingir que o evento não tem inscritos ou de acusar falha de
-   carregamento. O link de inscrição, acima, já funciona de qualquer forma. */
+   esta tabela da de voluntários, que mantém pendente/aprovado/reprovado, e é
+   também o que separa os dois schemas na API. */
 export default function ParticipantesPanel({ event, eventId }) {
   const [participantes, setParticipantes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [indisponivel, setIndisponivel] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -40,15 +32,9 @@ export default function ParticipantesPanel({ event, eventId }) {
         const lista = await fetchParticipantesByEvent(eventId);
         if (!active) return;
         setParticipantes(lista);
-        setIndisponivel(false);
         setError(null);
-      } catch (err) {
-        if (!active) return;
-        if (err instanceof ListagemIndisponivelError) {
-          setIndisponivel(true);
-        } else {
-          setError("Não foi possível carregar as inscrições deste evento.");
-        }
+      } catch {
+        if (active) setError("Não foi possível carregar as inscrições deste evento.");
       } finally {
         if (active) setLoading(false);
       }
@@ -98,11 +84,6 @@ export default function ParticipantesPanel({ event, eventId }) {
         <Loading />
       ) : error ? (
         <EmptyState message={error} />
-      ) : indisponivel ? (
-        <EmptyState
-          icon={<PlugZap size={28} className="text-[#FF6D2C]/60" />}
-          message="A listagem de participantes ainda não é fornecida pela API. O link de inscrição acima já pode ser divulgado — as respostas aparecerão aqui assim que a integração estiver pronta."
-        />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

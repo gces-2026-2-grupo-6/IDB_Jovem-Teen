@@ -28,28 +28,16 @@ function toInscricao(api) {
 }
 
 /* O participante não tem status: diferente do voluntário, ninguém aprova uma
-   inscrição de participante. O identificador aceita mais de um nome porque o
-   contrato ainda não foi fechado com a equipe do back-end — ver abaixo. */
+   inscrição de participante — é o que separa os dois schemas na API. */
 function toParticipante(api) {
   return {
-    id: api.inscricao_id ?? api.participante_id ?? api.resposta_id ?? api.email,
+    id: api.participante_id,
     eventId: api.evento_id,
     name: api.nome,
     email: api.email,
     respostaId: api.resposta_id,
     linkResposta: api.link_resposta,
   };
-}
-
-/* O back-end ainda não expõe a listagem de participantes. Isso não é um erro
-   da aplicação — é uma funcionalidade que falta do outro lado —, então a
-   interface precisa distinguir os dois casos para não acusar falha de
-   carregamento onde o que há é uma pendência de integração. */
-export class ListagemIndisponivelError extends Error {
-  constructor() {
-    super("A listagem de participantes ainda não está disponível na API.");
-    this.name = "ListagemIndisponivelError";
-  }
 }
 
 /**
@@ -65,21 +53,14 @@ export async function fetchInscricoesByEvent(eventId) {
 /**
  * Inscrições do fluxo de participantes.
  *
- * Lança `ListagemIndisponivelError` quando a API responde 404, que é o que
- * acontece hoje: o caminho ainda não existe. Qualquer outra falha sobe como
- * erro normal, para não mascarar indisponibilidade real do servidor.
+ * As duas listagens exigem o setor Inscrições e respondem 404 quando o evento
+ * não existe, então nenhuma falha recebe tratamento especial aqui: quem chama
+ * mostra o erro, como já faz com o voluntariado.
  *
  * @param {number|string} eventId
  * @returns {Promise<Array>}
  */
 export async function fetchParticipantesByEvent(eventId) {
-  try {
-    const data = await listarInscricoesParticipantes(eventId);
-    return (Array.isArray(data) ? data : []).map(toParticipante);
-  } catch (err) {
-    if (err?.response?.status === 404) {
-      throw new ListagemIndisponivelError();
-    }
-    throw err;
-  }
+  const data = await listarInscricoesParticipantes(eventId);
+  return (Array.isArray(data) ? data : []).map(toParticipante);
 }

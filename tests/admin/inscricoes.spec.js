@@ -101,20 +101,19 @@ test.describe('US09 - Painel: evento sem fluxo aberto', () => {
   });
 });
 
-test.describe('US09 - Painel: listagem de participantes ainda não fornecida pela API', () => {
-  /* O back-end hoje só expõe a listagem do fluxo de voluntariado. Enquanto o
-     caminho de participantes não existir, ele responde 404 — e a tela precisa
-     dizer isso, em vez de acusar falha de carregamento ou fingir que o evento
-     está sem inscritos. */
-  test('deve avisar que a integração está pendente, sem acusar erro', async ({ page }) => {
+test.describe('US09 - Painel: falha ao carregar a listagem de participantes', () => {
+  /* As duas listagens exigem o setor Inscrições e devolvem 404 quando o evento
+     não existe, então a de participantes não tem tratamento especial de erro:
+     mostra a mesma mensagem que a de voluntários já mostrava. */
+  test('deve acusar erro quando a API falha', async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
 
-    await page.route('**/formulario/eventos/*/inscricoes-participantes', (route) =>
+    await page.route('**/formulario/eventos/*/participantes', (route) =>
       route.fulfill({
-        status: 404,
+        status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ detail: 'Not Found' }),
+        body: JSON.stringify({ detail: 'Erro interno' }),
       })
     );
 
@@ -122,23 +121,19 @@ test.describe('US09 - Painel: listagem de participantes ainda não fornecida pel
     await page.getByRole('tab', { name: 'Participantes' }).click();
 
     await expect(
-      page.getByText('A listagem de participantes ainda não é fornecida pela API.')
+      page.getByText('Não foi possível carregar as inscrições deste evento.')
     ).toBeVisible();
-
-    // O link de inscrição continua utilizável mesmo sem a listagem
-    await expect(page.getByText('https://forms.gle/retiro-participantes')).toBeVisible();
-    await expect(page.getByText('Não foi possível carregar as inscrições deste evento.')).toHaveCount(0);
   });
 
-  test('deve acusar erro de verdade quando a API falha por outro motivo', async ({ page }) => {
+  test('deve acusar erro quando falta permissão de setor', async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
 
-    await page.route('**/formulario/eventos/*/inscricoes-participantes', (route) =>
+    await page.route('**/formulario/eventos/*/participantes', (route) =>
       route.fulfill({
-        status: 500,
+        status: 403,
         contentType: 'application/json',
-        body: JSON.stringify({ detail: 'Erro interno' }),
+        body: JSON.stringify({ detail: 'Sem permissão' }),
       })
     );
 
@@ -188,7 +183,7 @@ test.describe('US09 - Formulário de evento: dois links de inscrição', () => {
     await page.getByRole('button', { name: /Salvar/i }).click();
     await expect(page).toHaveURL(/\/admin\/eventos(\/\d+)?$/, { timeout: 15000 });
 
-    expect(enviado?.formulario_link_participantes).toBe('https://forms.gle/novo-participantes');
+    expect(enviado?.formulario_participante_link).toBe('https://forms.gle/novo-participantes');
     expect(enviado?.formulario_link).toBe('https://forms.gle/retiro');
   });
 });

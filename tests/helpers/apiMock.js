@@ -33,10 +33,8 @@ function makeSeed() {
         local_longitude: -34.9,
         link_galeria: "pasta-retiro",
         formulario_link: "https://forms.gle/retiro",
-        /* Fluxo de participantes da US09. Campo ainda não persistido pelo
-           back-end real — aqui ele existe para exercitar o contrato que o
-           front já envia e lê. */
-        formulario_link_participantes: "https://forms.gle/retiro-participantes",
+        /* Fluxo de participantes da US09. */
+        formulario_participante_link: "https://forms.gle/retiro-participantes",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -53,7 +51,7 @@ function makeSeed() {
         /* Evento sem nenhum dos dois links → exercita os estados "fluxo não
            aberto" nas telas pública e administrativa. */
         formulario_link: "",
-        formulario_link_participantes: "",
+        formulario_participante_link: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -68,7 +66,7 @@ function makeSeed() {
         local_longitude: -34.88,
         link_galeria: "pasta-congresso",
         formulario_link: "https://forms.gle/congresso",
-        formulario_link_participantes: "",
+        formulario_participante_link: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -84,7 +82,7 @@ function makeSeed() {
         local_longitude: null,
         link_galeria: "",
         formulario_link: "",
-        formulario_link_participantes: "",
+        formulario_participante_link: "",
         link_imagem: "",
         calendario_evento_id: null,
       },
@@ -228,7 +226,7 @@ function makeSeed() {
     inscricoesParticipantes: [
       {
         evento_id: 1,
-        inscricao_id: 500,
+        participante_id: 500,
         nome: "Carla Mendes",
         email: "carla@example.com",
         resposta_id: "p1",
@@ -236,7 +234,7 @@ function makeSeed() {
       },
       {
         evento_id: 1,
-        inscricao_id: 501,
+        participante_id: 501,
         nome: "Rafael Dias",
         email: "rafael@example.com",
         resposta_id: "p2",
@@ -413,11 +411,8 @@ export async function setupApiMock(page) {
           json(db.inscricoes.filter((i) => i.evento_id === eventId))
         );
       }
-      /* Fluxo de participantes (US09). O back-end real ainda não expõe este
-         caminho — quando não existe, o 404 vira o aviso de listagem
-         indisponível na tela. O mock o implementa para que o caminho feliz
-         também tenha teste; o teste do 404 sobrescreve esta rota. */
-      m = path.match(/\/formulario\/eventos\/(\d+)\/inscricoes-participantes$/);
+      /* Fluxo de participantes (US09), separado do de voluntariado acima. */
+      m = path.match(/\/formulario\/eventos\/(\d+)\/participantes$/);
       if (m) {
         const eventId = Number(m[1]);
         return route.fulfill(
@@ -603,7 +598,7 @@ export async function setupApiMock(page) {
             local_longitude: body.local_longitude,
             link_galeria: body.link_galeria || "",
             formulario_link: body.formulario_link || "",
-            formulario_link_participantes: body.formulario_link_participantes || "",
+            formulario_participante_link: body.formulario_participante_link || "",
             link_imagem: body.link_imagem || "",
             calendario_evento_id: null,
           };
