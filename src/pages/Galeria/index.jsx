@@ -2,89 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft } from "lucide-react";
 import { useGallery } from "./hooks/useGallery";
-import galeria1 from "../../assets/images/galeria1.png";
-import galeria2 from "../../assets/images/galeria2.png";
-import galeria3 from "../../assets/images/galeria3.png";
-import galeria4 from "../../assets/images/galeria4.png";
-
-// =====================================================
-// FOTOS FICTÍCIAS PARA TESTE/FOTOS MOCKADAS
-// =====================================================
-
-const mockPhotos = [
-  {
-    id: "mock-1",
-    event: "Festival de Inverno",
-    location: "Brasília - DF",
-    image:
-      galeria1,
-  },
-  {
-    id: "mock-2",
-    event: "Festival de Inverno",
-    location: "Brasília - DF",
-    image:
-      galeria2,
-  },
-  {
-    id: "mock-3",
-    event: "Festival de Inverno",
-    location: "Brasília - DF",
-    image:
-      galeria3,
-  },
-  {
-    id: "mock-4",
-    event: "Festival de Inverno",
-    location: "Brasília - DF",
-    image:
-      galeria4,
-  },
-
-  {
-    id: "mock-5",
-    event: "Feira Cultural",
-    location: "Goiânia - GO",
-    image:
-      galeria1,
-  },
-  {
-    id: "mock-6",
-    event: "Feira Cultural",
-    location: "Goiânia - GO",
-    image:
-      galeria2,
-  },
-  {
-    id: "mock-7",
-    event: "Feira Cultural",
-    location: "Goiânia - GO",
-    image:
-      galeria3,
-  },
-
-  {
-    id: "mock-8",
-    event: "Evento Esportivo",
-    location: "São Paulo - SP",
-    image:
-      galeria4,
-  },
-  {
-    id: "mock-9",
-    event: "Evento Esportivo",
-    location: "São Paulo - SP",
-    image:
-      galeria1,
-  },
-  {
-    id: "mock-10",
-    event: "Evento Esportivo",
-    location: "São Paulo - SP",
-    image:
-      galeria2,
-  },
-];
 
 export default function Galeria() {
   const navigate = useNavigate();
@@ -102,16 +19,8 @@ export default function Galeria() {
     );
   }
 
-  // =====================================================
-  // USA AS FOTOS REAIS QUANDO EXISTIREM.
-  // CASO CONTRÁRIO, USA AS FOTOS FICTÍCIAS.
-  // =====================================================
-
-  const galleryPhotos =
-    photos && photos.length > 0 ? photos : mockPhotos;
-
   // Agrupa as fotos por evento
-  const albums = galleryPhotos.reduce((acc, photo) => {
+  const albums = photos.reduce((acc, photo) => {
     const event = photo.event;
 
     if (!acc[event]) {
@@ -195,7 +104,15 @@ export default function Galeria() {
       {/* ÁLBUNS */}
       {/* ================================================= */}
 
-      {!selectedEvent && (
+      {!selectedEvent && albumEntries.length === 0 && (
+        <section className="w-full max-w-6xl mx-auto px-6 py-10 pb-20">
+          <p className="text-center text-white/80">
+            Nenhuma foto publicada ainda.
+          </p>
+        </section>
+      )}
+
+      {!selectedEvent && albumEntries.length > 0 && (
         <section className="w-full max-w-6xl mx-auto px-6 py-10 pb-20">
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
