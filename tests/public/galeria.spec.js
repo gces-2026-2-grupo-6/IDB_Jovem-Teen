@@ -25,17 +25,16 @@ test.describe('Página de Galeria', () => {
     await expect(page).toHaveURL('/');
   });
 
-  test('deve renderizar os cards de fotos no grid', async ({ page }) => {
+  test('deve renderizar um card por álbum no grid', async ({ page }) => {
     // Aguarda o grid carregar
     const gridContainer = page.locator('section > div.grid');
     await expect(gridContainer).toBeVisible();
 
-    // Verifica as imagens agregadas dos eventos com galeria
-    const imagens = gridContainer.locator('img');
-    await expect(imagens.first()).toBeVisible();
+    // Cada álbum tem a capa e o nome do evento, num h2
+    const capas = gridContainer.locator('img');
+    await expect(capas.first()).toBeVisible();
 
-    // Verifica textos nos cards de galeria
-    const nomesEventos = gridContainer.locator('h3');
+    const nomesEventos = gridContainer.locator('h2');
     await expect(nomesEventos.first()).toBeVisible();
   });
 
@@ -53,38 +52,70 @@ test.describe('Página de Galeria', () => {
     await expect(gridContainer.getByText('Centro de Convenções')).toBeVisible();
   });
 
-  test('deve ter alt text correto nas imagens da galeria', async ({ page }) => {
+  test('deve ter alt text correto nas capas dos álbuns', async ({ page }) => {
     const gridContainer = page.locator('section > div.grid');
     await expect(gridContainer).toBeVisible();
 
-    const imagens = gridContainer.locator('img');
-    const count = await imagens.count();
+    const capas = gridContainer.locator('img');
+    const count = await capas.count();
     expect(count).toBeGreaterThan(0);
 
-    // Alt text segue o padrão "Evento - Local"
+    // A capa se identifica como capa, e não como uma foto qualquer do evento
     for (let i = 0; i < count; i++) {
-      const alt = await imagens.nth(i).getAttribute('alt');
+      const alt = await capas.nth(i).getAttribute('alt');
       expect(alt).toBeTruthy();
-      expect(alt).toContain(' - ');
+      expect(alt).toMatch(/^Capa do álbum /);
     }
 
-    // Verifica alt text específico (primeira foto do evento 1)
-    await expect(imagens.first()).toHaveAttribute('alt', 'Retiro de Verão - Sítio Boa Vista');
+    await expect(capas.first()).toHaveAttribute('alt', 'Capa do álbum Retiro de Verão');
   });
 
-  test('deve agregar as fotos dos eventos que possuem galeria', async ({ page }) => {
+  test('deve usar o padrão "Evento - Local" no alt das fotos dentro do álbum', async ({ page }) => {
+    await page.getByRole('button', { name: /Capa do álbum Retiro de Verão|Retiro de Verão/ }).first().click();
+
+    const fotos = page.locator('section > div.grid img');
+    const count = await fotos.count();
+    expect(count).toBe(2);
+
+    for (let i = 0; i < count; i++) {
+      await expect(fotos.nth(i)).toHaveAttribute('alt', 'Retiro de Verão - Sítio Boa Vista');
+    }
+  });
+
+  test('deve agrupar as fotos em um álbum por evento', async ({ page }) => {
     const gridContainer = page.locator('section > div.grid');
     await expect(gridContainer).toBeVisible();
 
-    // As fixtures têm 2 fotos do evento 1 e 1 foto do evento 3 → 3 cards
-    const imagens = gridContainer.locator('img');
-    expect(await imagens.count()).toBe(3);
+    /* As fixtures têm 2 fotos do evento 1 e 1 do evento 3. Depois da US07 a
+       galeria agrupa por evento, então são 2 álbuns — não 3 cards de foto. */
+    const capas = gridContainer.locator('img');
+    expect(await capas.count()).toBe(2);
 
-    const eventNames = gridContainer.locator('h3');
-    expect(await eventNames.count()).toBe(3);
+    const eventNames = gridContainer.locator('h2');
+    expect(await eventNames.count()).toBe(2);
 
     await expect(gridContainer.getByText('Retiro de Verão').first()).toBeVisible();
     await expect(gridContainer.getByText('Congresso 2020').first()).toBeVisible();
+
+    // A contagem de fotos de cada álbum aparece no card
+    await expect(gridContainer.getByText('2 fotos')).toBeVisible();
+    await expect(gridContainer.getByText('1 foto')).toBeVisible();
+  });
+
+  test('deve abrir o álbum e voltar para a lista de álbuns', async ({ page }) => {
+    await page.getByRole('button', { name: /Retiro de Verão/ }).first().click();
+
+    // Dentro do álbum: título do evento e as fotos dele
+    await expect(page.getByRole('heading', { name: 'Retiro de Verão' })).toBeVisible();
+    await expect(page.getByText('2 fotos')).toBeVisible();
+    expect(await page.locator('section > div.grid img').count()).toBe(2);
+
+    // O botão de voltar devolve à lista, sem sair da página
+    await page.getByLabel('Voltar').click();
+
+    await expect(page.getByRole('heading', { name: /Galeria de fotos/i })).toBeVisible();
+    expect(await page.locator('section > div.grid img').count()).toBe(2);
+    await expect(page).toHaveURL(/\/galeria$/);
   });
 
   test('deve tratar erro (catch block) se a api falhar ao carregar galeria agregada', async ({ page }) => {
