@@ -67,6 +67,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     endDay: end.day,
     endTime: end.time,
     linkGaleria: initialData.linkGaleria || "",
+    linkFormularioParticipantes: initialData.linkFormularioParticipantes || "",
     linkFormularioVoluntarios: initialData.linkFormularioVoluntarios || "",
     image: initialData.linkImagem || "",
   });
@@ -449,17 +450,54 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         <hr className="my-5 border-gray-100" />
 
-        {/* Link Formulário Voluntários */}
+        {/* Links de inscrição — os dois fluxos do evento (US09). São campos
+            independentes: um evento pode abrir só a inscrição de participante,
+            só a de voluntário, ou as duas. Cada link em branco esconde o botão
+            correspondente nas telas públicas. */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Link Formulário Voluntários</label>
-          <input
-            type="url"
-            name="linkFormularioVoluntarios"
-            value={form.linkFormularioVoluntarios}
-            onChange={handleChange}
-            placeholder="https://forms.gle/..."
-            className={`${inputClass} sm:max-w-md`}
-          />
+          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Links de Inscrição</label>
+          <p className="text-xs text-[#1E1E1E]/50 mb-3 max-w-md">
+            Um formulário para quem vai participar do evento e outro para quem
+            vai trabalhar nele. Deixe em branco o fluxo que este evento não abre.
+          </p>
+
+          <div className="flex flex-col gap-3 sm:max-w-md">
+            <div>
+              <label
+                htmlFor="linkFormularioParticipantes"
+                className="block text-xs font-semibold text-[#1E1E1E]/70 mb-1.5"
+              >
+                Participantes
+              </label>
+              <input
+                id="linkFormularioParticipantes"
+                type="url"
+                name="linkFormularioParticipantes"
+                value={form.linkFormularioParticipantes}
+                onChange={handleChange}
+                placeholder="https://forms.gle/..."
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="linkFormularioVoluntarios"
+                className="block text-xs font-semibold text-[#1E1E1E]/70 mb-1.5"
+              >
+                Voluntários
+              </label>
+              <input
+                id="linkFormularioVoluntarios"
+                type="url"
+                name="linkFormularioVoluntarios"
+                value={form.linkFormularioVoluntarios}
+                onChange={handleChange}
+                placeholder="https://forms.gle/..."
+                className={inputClass}
+              />
+            </div>
+          </div>
         </div>
 
         <hr className="my-5 border-gray-100" />

@@ -103,6 +103,10 @@ function adaptEvent(apiEvent) {
     latitude: apiEvent.local_latitude,
     longitude: apiEvent.local_longitude,
     linkGaleria: apiEvent.link_galeria || "",
+    /* Dois fluxos de inscrição (US09): quem vai participar e quem vai
+       trabalhar no evento. O nome dos dois campos na API fica isolado aqui e
+       em `toApiEvent`. */
+    linkFormularioParticipantes: apiEvent.formulario_participante_link || "",
     linkFormularioVoluntarios: apiEvent.formulario_link || "",
     calendarioEventoId: apiEvent.calendario_evento_id || null,
     tipoEvento: apiEvent.tipo_evento || "",
@@ -137,6 +141,7 @@ function toApiEvent(form) {
     datas: dias.length > 0 ? dias : null,
     link_galeria: form.linkGaleria || null,
     formulario_link: form.linkFormularioVoluntarios || null,
+    formulario_participante_link: form.linkFormularioParticipantes || null,
     link_imagem: (form.image && form.image.trim()) || null,
   };
 }
