@@ -21,10 +21,14 @@ export default defineConfig({
     },
   ],
 
+  /* No CI, a suite roda contra o build servido por `vite preview`, e nao contra
+     o servidor de desenvolvimento: e o artefato publicado que precisa ser
+     testado. Localmente continua em `npm run dev`, com recarregamento. */
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'npm run preview -- --port 5173' : 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });
 

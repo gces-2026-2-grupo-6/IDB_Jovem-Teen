@@ -39,6 +39,13 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      - name: Publicar o build para o job de E2E
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
   e2e:
     name: E2E (Playwright)
     needs: build
@@ -52,6 +59,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # A suite roda contra este artefato, e nao contra o servidor de
+      # desenvolvimento: assim o que e testado e o que vai para producao.
+      - name: Baixar o build gerado no job anterior
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       - name: Cache Playwright browsers
         id: playwright-cache
