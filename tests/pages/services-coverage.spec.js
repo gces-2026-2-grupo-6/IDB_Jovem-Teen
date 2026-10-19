@@ -27,11 +27,10 @@ test.describe('eventService.js – branches de erro', { tag: '@fonte' }, () => {
   test('handleUpdateEvent – sem tipoEvento válido retorna erro (linha 358-365)', async ({ page }) => {
     await page.goto('/admin/eventos/1/editar');
 
-    let alertMessage = '';
-    page.on('dialog', async dialog => {
-      alertMessage = dialog.message();
-      await dialog.accept();
-    });
+    /* O formulario carrega o evento antes de renderizar o select. Sem esperar
+       por ele, o page.evaluate abaixo nao achava nada, o campo seguia valido e
+       o alerta nunca era disparado. */
+    await page.waitForSelector('select[name="tipoEvento"]');
 
     await page.evaluate(() => {
       const sel = document.querySelector('select[name="tipoEvento"]');
@@ -45,10 +44,23 @@ test.describe('eventService.js – branches de erro', { tag: '@fonte' }, () => {
       document.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
     });
 
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(600);
+    /* Espera pelo evento, nao por um tempo fixo: com 600ms a assercao corria
+       antes do alerta em maquina carregada, e o teste ficava instavel.
 
-    expect(alertMessage.length).toBeGreaterThan(0);
+       O handler precisa aceitar o dialogo *durante* o clique. `alert()` bloqueia
+       a pagina, entao esperar o clique terminar para so depois aceitar travaria
+       os dois. */
+    const alerta = new Promise((resolve) => {
+      page.once('dialog', async (dialogo) => {
+        const mensagem = dialogo.message();
+        await dialogo.accept();
+        resolve(mensagem);
+      });
+    });
+
+    await page.getByRole('button', { name: 'Salvar' }).click();
+
+    expect((await alerta).length).toBeGreaterThan(0);
   });
 
   test('handleUpdateEvent – API retorna erro 500 (linha 364-365)', async ({ page }) => {
