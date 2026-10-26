@@ -75,9 +75,10 @@ test.describe('Página Eventos Próximos', () => {
     const fallbackMsg = page.getByText(/User denied Geolocation|Permissão de localização negada|Mostrando todos os eventos por data/i);
     await expect(fallbackMsg.first()).toBeVisible();
 
-    // A lista de eventos deve aparecer
+    // A lista de eventos deve aparecer. A asserção espera a lista: contar
+    // uma vez só corria contra a carga dos eventos e falhava no WebKit.
     const list = page.locator('a[href^="/eventos/"]');
-    await expect(await list.count()).toBeGreaterThan(0);
+    await expect(list.first()).toBeVisible();
   });
 
   test('deve interagir com os marcadores do mapa (abrir e fechar)', async ({ page }) => {

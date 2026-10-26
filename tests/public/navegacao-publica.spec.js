@@ -7,7 +7,10 @@ test.describe('Fluxos de Navegação Pública (Cross-page)', () => {
     await mockKeycloakLogin(page);
     await setupApiMock(page);
   });
-  test('Fluxo Home -> Eventos -> Detalhes -> Voltar -> Home', async ({ page }) => {
+  test('Fluxo Home -> Eventos -> Detalhes -> Voltar -> Home', async ({ page, isMobile }) => {
+    /* Só desktop: o fluxo usa a navegação do cabeçalho, que no celular fica
+       dentro do menu móvel (coberto em header.spec.js). */
+    test.skip(isMobile, 'navegação do cabeçalho recolhida no celular');
     // Inicia na Home
     await page.goto('/');
     await expect(page).toHaveURL('/');
