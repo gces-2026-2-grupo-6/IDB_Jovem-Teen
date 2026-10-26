@@ -192,7 +192,8 @@ test.describe('Exclusão restrita ao superadministrador', () => {
     await expect(page).toHaveURL(/\/admin\/produtos\/criar/);
   });
 
-  test('o serviço recusa a exclusão mesmo sem passar pela tela', async ({ page }) => {
+  test('o serviço recusa a exclusão mesmo sem passar pela tela',
+    { tag: '@fonte' }, async ({ page }) => {
     await loginComPapeis(page, ADMIN_EVENTOS);
     await setupApiMock(page);
     await page.goto('/admin/eventos');

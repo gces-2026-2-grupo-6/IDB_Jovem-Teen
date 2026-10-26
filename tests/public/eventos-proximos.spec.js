@@ -13,6 +13,27 @@ test.describe('Página Eventos Próximos', () => {
   });
 
   test('deve possuir um mapa (Leaflet) carregado', async ({ page }) => {
+    /* A página só troca "Obtendo sua localização..." pelo mapa quando a
+       geolocalização responde. Sem permissão concedida, quem responde é o
+       `timeout: 10000` do useGeolocation, e o teste passava a depender de uma
+       corrida: 10s de espera do navegador contra 15s de orçamento da asserção.
+       Em máquina carregada, ou com os dois servidores de pé e um worker só, a
+       corrida se perde. Mocando a localização como o teste dos marcadores já
+       faz, o mapa aparece de imediato e o que se verifica continua sendo o
+       mesmo: que o container do Leaflet é renderizado. */
+    await page.addInitScript(() => {
+      navigator.geolocation.getCurrentPosition = (success) => {
+        success({ coords: { latitude: -8.05, longitude: -34.9 } });
+      };
+      navigator.geolocation.watchPosition = (success) => {
+        success({ coords: { latitude: -8.05, longitude: -34.9 } });
+        return 1;
+      };
+    });
+
+    /* O beforeEach já navegou; o initScript vale da próxima navegação em diante. */
+    await page.goto('/eventos-proximos');
+
     // O mapa agora é renderizado com Leaflet (não mais um iframe do Google)
     const mapa = page.locator('.leaflet-container');
     await expect(mapa).toBeVisible({ timeout: 15000 });
