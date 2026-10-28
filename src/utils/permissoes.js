@@ -134,11 +134,14 @@ export function podeGerenciarAdministradores(roles) {
 }
 
 /* Para onde mandar a pessoa ao entrar no painel. O painel inicial serve a quem
-   administra eventos ou produtos, porque é o que ele resume; quem só cuida de
-   inscrições vai direto para a sua tela, em vez de encarar um painel vazio. */
+   administra eventos, porque é a agenda que ele resume; quem só cuida da loja
+   ou das inscrições vai direto para a sua tela, em vez de encarar um painel
+   vazio. */
 export function rotaInicialDoPainel(roles) {
   const setores = setoresDoUsuario(roles);
   if (setores.length === 0) return "/unauthorized";
-  if (setores.includes(SETOR.EVENTOS) || setores.includes(SETOR.PRODUTOS)) return "/admin";
+  /* US03 (revisão, CA1): o painel inicial resume só a agenda; quem cuida
+     apenas da loja entra direto na tela de Produtos. */
+  if (setores.includes(SETOR.EVENTOS)) return "/admin";
   return ROTA_DO_SETOR[setores[0]];
 }

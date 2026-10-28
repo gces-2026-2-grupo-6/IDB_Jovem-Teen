@@ -241,6 +241,9 @@ function makeSeed() {
         link_resposta: "",
       },
     ],
+    /* US22: missão, visão e valores. Começa sem nada salvo, como o servidor
+       antes do primeiro cadastro pelo painel. */
+    institucional: null,
     nextEventId: 1000,
     nextActivityId: 2000,
     nextProductId: 3000,
@@ -297,7 +300,7 @@ export async function setupApiMock(page) {
      SPA (ex.: http://localhost:5173/admin/voluntarios), apenas as chamadas de
      API (ex.: http://localhost:8000/voluntarios/...). */
   await page.route(
-    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante)(\/|\?|$)/,
+    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante|institucional)(\/|\?|$)/,
     async (route) => {
       const request = route.request();
       const method = request.method();
@@ -309,6 +312,21 @@ export async function setupApiMock(page) {
           body = JSON.parse(request.postData() || "{}");
         } catch {
           body = {};
+        }
+      }
+
+      // ---------- INSTITUCIONAL (US22) ----------
+      if (path.match(/\/institucional\/?$/)) {
+        if (method === "GET") {
+          return route.fulfill(db.institucional ? json(db.institucional) : notFound());
+        }
+        if (method === "PUT") {
+          db.institucional = {
+            missao: body.missao ?? null,
+            visao: body.visao ?? null,
+            valores: Array.isArray(body.valores) ? body.valores : [],
+          };
+          return route.fulfill(json(db.institucional));
         }
       }
 
@@ -549,6 +567,14 @@ export async function setupApiMock(page) {
       }
 
       // ---------- GALERIA ----------
+      /* US18: fotos excluídas do site deixam de ser listadas. */
+      m = path.match(/\/evento\/(\d+)\/galeria\/excluidas$/);
+      if (m && method === "POST") {
+        const eventId = Number(m[1]);
+        const ids = Array.isArray(body.fotos) ? body.fotos : [];
+        db.galleries[eventId] = (db.galleries[eventId] || []).filter((f) => !ids.includes(f.id));
+        return route.fulfill(json({}, 204));
+      }
       m = path.match(/\/evento\/(\d+)\/galeria$/);
       if (m) {
         const eventId = Number(m[1]);
@@ -560,6 +586,22 @@ export async function setupApiMock(page) {
         const termo = (url.searchParams.get("termo") || "").toLowerCase();
         return route.fulfill(
           json(db.events.filter((e) => e.nome.toLowerCase().includes(termo)))
+        );
+      }
+      /* US20 (A1): o que sai junto com o evento, como o back-end conta. */
+      m = path.match(/\/evento\/(\d+)\/exclusao$/);
+      if (m && method === "GET") {
+        const eventId = Number(m[1]);
+        if (!db.events.some((e) => e.evento_id === eventId)) return route.fulfill(notFound());
+        const doEvento = (lista) => lista.filter((item) => item.evento_id === eventId).length;
+        return route.fulfill(
+          json({
+            evento_id: eventId,
+            participantes: doEvento(db.inscricoesParticipantes),
+            voluntarios: doEvento(db.inscricoes),
+            atividades: doEvento(db.activities),
+            convidados: (db.speakers[eventId] || []).length,
+          })
         );
       }
       m = path.match(/\/evento\/(\d+)$/);
@@ -578,7 +620,15 @@ export async function setupApiMock(page) {
           return route.fulfill(json(db.events[idx]));
         }
         if (method === "DELETE") {
-          if (idx !== -1) db.events.splice(idx, 1);
+          /* US20 (Opção A): inscrições, programação e convidados saem juntos. */
+          if (idx !== -1) {
+            db.events.splice(idx, 1);
+            const outros = (item) => item.evento_id !== eventId;
+            db.inscricoes = db.inscricoes.filter(outros);
+            db.inscricoesParticipantes = db.inscricoesParticipantes.filter(outros);
+            db.activities = db.activities.filter(outros);
+            delete db.speakers[eventId];
+          }
           return route.fulfill(json({}, 204));
         }
       }
@@ -596,6 +646,8 @@ export async function setupApiMock(page) {
             nome_local: body.nome_local || "",
             local_latitude: body.local_latitude,
             local_longitude: body.local_longitude,
+            modalidade: body.modalidade || "presencial",
+            link_transmissao: body.link_transmissao || null,
             link_galeria: body.link_galeria || "",
             formulario_link: body.formulario_link || "",
             formulario_participante_link: body.formulario_participante_link || "",

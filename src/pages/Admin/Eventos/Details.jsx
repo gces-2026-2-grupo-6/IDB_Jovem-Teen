@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import { fetchEventById, formatDate } from "../../../services/eventService";
+import { fetchEventById, formatDate, isOnlineEvent } from "../../../services/eventService";
 import ConvidadosDoEvento from "./components/ConvidadosDoEvento";
+import AlbumDoEvento from "./components/AlbumDoEvento";
 
 
 export default function AdminEventoDetails() {
@@ -104,10 +105,18 @@ export default function AdminEventoDetails() {
             </tr>
             <tr className="border-b border-gray-100">
               <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
-                Local
+                Modalidade
               </td>
               <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base">
-                {event.location || "—"}
+                {isOnlineEvent(event) ? "Online" : "Presencial"}
+              </td>
+            </tr>
+            <tr className="border-b border-gray-100">
+              <td className="py-4 px-6 font-bold text-[#1E1E1E] text-sm sm:text-base whitespace-nowrap align-top">
+                {isOnlineEvent(event) ? "Link da transmissão" : "Local"}
+              </td>
+              <td className="py-4 px-6 font-bold text-[#FF6D2C] text-sm sm:text-base break-all">
+                {isOnlineEvent(event) ? event.linkTransmissao || "Ainda não cadastrado" : event.location || "—"}
               </td>
             </tr>
             <tr className="border-b border-gray-100">
@@ -121,6 +130,9 @@ export default function AdminEventoDetails() {
           </tbody>
         </table>
       </div>
+
+      {/* US18: excluir fotos específicas do álbum, a pedido do responsável. */}
+      <AlbumDoEvento eventId={event.id} temAlbum={Boolean(event.linkGaleria)} />
     </div>
   );
 }
