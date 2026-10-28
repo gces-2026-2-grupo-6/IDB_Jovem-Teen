@@ -105,11 +105,14 @@ test.describe('Página Eventos Próximos', () => {
     await expect(marcadores).toHaveCount(3);
     const marcadorEvento = marcadores.nth(1);
     await marcadorEvento.waitFor({ state: 'visible' });
-    await marcadorEvento.click({ force: true });
-
-    // O popup (com botão 'Ver evento') deve aparecer
+    // O popup (com botão 'Ver evento') deve aparecer. O clique se repete: no
+    // WebKit o primeiro toque às vezes chega antes do mapa assentar e o
+    // Leaflet o descarta.
     const popup = page.locator('.leaflet-popup');
-    await expect(popup).toBeVisible();
+    await expect(async () => {
+      await marcadorEvento.click({ force: true });
+      await expect(popup).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(popup.getByRole('link', { name: /Ver evento/i })).toBeVisible();
 
     // Testa fechar o popup
