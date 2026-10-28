@@ -411,6 +411,25 @@ export async function handleUpdateEvent(slugOrId, data) {
   }
 }
 
+/* US20 (A1): o que será apagado junto com o evento, para a confirmação.
+   Devolve `null` se a contagem não puder ser lida — o modal avisa e a
+   exclusão continua possível. */
+export async function fetchDeletionSummary(slugOrId) {
+  const id = parseEventId(slugOrId);
+  if (!id) return null;
+  try {
+    const { data } = await api.get(`/evento/${id}/exclusao`);
+    return {
+      participantes: Number(data?.participantes) || 0,
+      voluntarios: Number(data?.voluntarios) || 0,
+      atividades: Number(data?.atividades) || 0,
+      convidados: Number(data?.convidados) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function handleDeleteEvent(slugOrId) {
   if (!podeExcluirAgora()) {
     return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
