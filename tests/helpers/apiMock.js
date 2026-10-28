@@ -567,6 +567,14 @@ export async function setupApiMock(page) {
       }
 
       // ---------- GALERIA ----------
+      /* US18: fotos excluídas do site deixam de ser listadas. */
+      m = path.match(/\/evento\/(\d+)\/galeria\/excluidas$/);
+      if (m && method === "POST") {
+        const eventId = Number(m[1]);
+        const ids = Array.isArray(body.fotos) ? body.fotos : [];
+        db.galleries[eventId] = (db.galleries[eventId] || []).filter((f) => !ids.includes(f.id));
+        return route.fulfill(json({}, 204));
+      }
       m = path.match(/\/evento\/(\d+)\/galeria$/);
       if (m) {
         const eventId = Number(m[1]);

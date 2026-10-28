@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { fetchEventById, formatDate, isOnlineEvent } from "../../../services/eventService";
 import ConvidadosDoEvento from "./components/ConvidadosDoEvento";
+import AlbumDoEvento from "./components/AlbumDoEvento";
 
 
 export default function AdminEventoDetails() {
@@ -129,6 +130,9 @@ export default function AdminEventoDetails() {
           </tbody>
         </table>
       </div>
+
+      {/* US18: excluir fotos específicas do álbum, a pedido do responsável. */}
+      <AlbumDoEvento eventId={event.id} temAlbum={Boolean(event.linkGaleria)} />
     </div>
   );
 }

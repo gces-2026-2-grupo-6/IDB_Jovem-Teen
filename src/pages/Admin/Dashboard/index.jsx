@@ -3,11 +3,9 @@ import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import SectionTitle from "../../../components/ui/SectionTitle";
 import { MapPin } from "lucide-react";
-import DashboardProductCard from "./components/DashboardProductCard";
 import CalendarMini from "./components/CalendarMini";
 import EmptyState from "../../../components/ui/EmptyState";
 import { fetchAllEvents, getEventStatus, extractDayMonth } from "../../../services/eventService";
-import { fetchAllProducts } from "../../../services/productService";
 import usePermissao from "../../../hooks/usePermissao";
 import { SETOR } from "../../../utils/permissoes";
 
@@ -60,16 +58,18 @@ function byDateDesc(a, b) {
   return new Date(b.date).getTime() - new Date(a.date).getTime();
 }
 
-// tela principal do admin
+/* Tela inicial do painel: o resumo da agenda de eventos.
+
+   US03 (revisão, CA1): produtos e eventos ficam em telas separadas, cada uma
+   com o seu item de menu. Antes, "Produtos Cadastrados" dividia esta tela com
+   o calendário de eventos; o resumo da loja agora é a própria tela Produtos. */
 export default function AdminDashboard() {
   const { administra } = usePermissao();
   const veEventos = administra(SETOR.EVENTOS);
-  const veProdutos = administra(SETOR.PRODUTOS);
 
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [ongoingEvents, setOngoingEvents] = useState([]);
   const [pastEvents, setPastEvents] = useState([]);
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -83,10 +83,7 @@ export default function AdminDashboard() {
       try {
         /* Não busca o que a pessoa não pode ver: além de poupar a requisição,
            evita um erro de permissão da API virar erro na tela inteira. */
-        const [allEvents, allProducts] = await Promise.all([
-          veEventos ? fetchAllEvents() : Promise.resolve([]),
-          veProdutos ? fetchAllProducts() : Promise.resolve([]),
-        ]);
+        const allEvents = veEventos ? await fetchAllEvents() : [];
 
         if (!active) return;
 
@@ -111,7 +108,6 @@ export default function AdminDashboard() {
         setUpcomingEvents(nextEvents);
         setOngoingEvents(currentEvents);
         setPastEvents(previousEvents);
-        setProducts(allProducts.slice(0, 8));
       } catch {
         if (active) {
           setError("Não foi possível carregar os dados do dashboard.");
@@ -126,7 +122,7 @@ export default function AdminDashboard() {
     return () => {
       active = false;
     };
-  }, [veEventos, veProdutos]);
+  }, [veEventos]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -137,9 +133,9 @@ export default function AdminDashboard() {
 
       {error && <EmptyState message={error} className="border-red-100 bg-red-50/60 text-red-700" />}
 
-      {/* Quem não administra eventos nem produtos não tem o que ver aqui —
-          o painel resume esses dois setores. */}
-      {!veEventos && !veProdutos && (
+      {/* Quem não administra eventos não tem o que ver aqui — o painel inicial
+          resume a agenda. */}
+      {!veEventos && (
         <EmptyState message="Use o menu ao lado para acessar os setores que você administra." />
       )}
 
@@ -216,37 +212,12 @@ export default function AdminDashboard() {
       </div>
       )}
 
-      {/* linha do caledário e produtos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* calendário — é a agenda de eventos */}
-        {veEventos && <CalendarMini />}
-
-        {/* lista de produtos */}
-        {veProdutos && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-[#1E1E1E] text-lg">Produtos Cadastrados</h2>
-            <Link
-              to="/admin/produtos"
-              className="text-xs font-semibold text-[#FF6D2C] hover:underline flex items-center gap-0.5"
-            >
-              Ver todos <ChevronRight size={14} />
-            </Link>
-          </div>
-          {loading ? (
-            <p className="text-sm text-[#1E1E1E]/40">Carregando produtos...</p>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
-              {products.map((product) => (
-                <DashboardProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState message="Nenhum produto cadastrado." className="border-none shadow-none p-0 bg-transparent" />
-          )}
+      {/* calendário — é a agenda de eventos */}
+      {veEventos && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CalendarMini />
         </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

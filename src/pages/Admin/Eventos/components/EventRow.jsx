@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { Eye, MapPin, Pencil, Trash2 } from "lucide-react";
 import {
   extractDayMonth,
   isMultiDay,
@@ -80,6 +80,16 @@ export function UpcomingEventRow({ event, onEdit, onDelete }) {
 
       {/* Acoes */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* US18: o álbum fica na tela de detalhes; sem este atalho, evento
+            próximo ou em andamento não tinha caminho até ele pelo menu. */}
+        <Link
+          to={`/admin/eventos/${event.id}`}
+          className="w-9 h-9 rounded-lg bg-orange-50 hover:bg-orange-100 flex items-center justify-center transition-colors group/btn"
+          title="Abrir evento e álbum"
+          aria-label="Abrir evento e álbum"
+        >
+          <Eye size={16} className="text-[#D5650D] group-hover/btn:scale-110 transition-transform" />
+        </Link>
         <button
           onClick={() => onEdit(event.id)}
           className="w-9 h-9 rounded-lg bg-green-50 hover:bg-green-100 flex items-center justify-center transition-colors group/btn"
