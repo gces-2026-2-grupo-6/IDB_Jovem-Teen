@@ -23,6 +23,7 @@ const ITENS_DO_MENU = [
   { nome: 'Voluntários', url: /\/admin\/voluntarios$/, titulo: 'Voluntários' },
   { nome: 'Produtos', url: /\/admin\/produtos$/, titulo: 'Produtos' },
   { nome: 'Diretores & Líderes', url: /\/admin\/lideres$/, titulo: /Diretores|Líderes/ },
+  { nome: 'Missão e valores', url: /\/admin\/institucional$/, titulo: 'Missão, visão e valores' },
   { nome: 'Administradores', url: /\/admin\/administradores$/, titulo: 'Administradores' },
 ];
 
@@ -39,6 +40,7 @@ const TELAS = [
   '/admin/produtos/criar',
   '/admin/lideres',
   '/admin/lideres/criar',
+  '/admin/institucional',
   '/admin/administradores',
   '/admin/administradores/criar',
 ];

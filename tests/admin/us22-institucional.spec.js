@@ -19,7 +19,10 @@ test.describe('US22 - Edição de missão, visão e valores', () => {
     await setupApiMock(page);
   });
 
-  test('a superadministradora vê o item no menu e abre a tela', async ({ page }) => {
+  test('a superadministradora vê o item no menu e abre a tela', async ({ page, isMobile }) => {
+    /* Só desktop: no celular a barra lateral fica recolhida atrás do botão
+       "Abrir menu". O caminho pelo menu móvel é coberto em admin-mobile.spec.js. */
+    test.skip(isMobile, 'barra lateral recolhida no celular');
     await page.goto('/admin');
     await menu(page).filter({ hasText: 'Missão e valores' }).click();
 
