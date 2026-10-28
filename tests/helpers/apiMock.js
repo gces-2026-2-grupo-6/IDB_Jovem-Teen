@@ -562,6 +562,22 @@ export async function setupApiMock(page) {
           json(db.events.filter((e) => e.nome.toLowerCase().includes(termo)))
         );
       }
+      /* US20 (A1): o que sai junto com o evento, como o back-end conta. */
+      m = path.match(/\/evento\/(\d+)\/exclusao$/);
+      if (m && method === "GET") {
+        const eventId = Number(m[1]);
+        if (!db.events.some((e) => e.evento_id === eventId)) return route.fulfill(notFound());
+        const doEvento = (lista) => lista.filter((item) => item.evento_id === eventId).length;
+        return route.fulfill(
+          json({
+            evento_id: eventId,
+            participantes: doEvento(db.inscricoesParticipantes),
+            voluntarios: doEvento(db.inscricoes),
+            atividades: doEvento(db.activities),
+            convidados: (db.speakers[eventId] || []).length,
+          })
+        );
+      }
       m = path.match(/\/evento\/(\d+)$/);
       if (m) {
         const eventId = Number(m[1]);
@@ -578,7 +594,15 @@ export async function setupApiMock(page) {
           return route.fulfill(json(db.events[idx]));
         }
         if (method === "DELETE") {
-          if (idx !== -1) db.events.splice(idx, 1);
+          /* US20 (Opção A): inscrições, programação e convidados saem juntos. */
+          if (idx !== -1) {
+            db.events.splice(idx, 1);
+            const outros = (item) => item.evento_id !== eventId;
+            db.inscricoes = db.inscricoes.filter(outros);
+            db.inscricoesParticipantes = db.inscricoesParticipantes.filter(outros);
+            db.activities = db.activities.filter(outros);
+            delete db.speakers[eventId];
+          }
           return route.fulfill(json({}, 204));
         }
       }
@@ -596,6 +620,8 @@ export async function setupApiMock(page) {
             nome_local: body.nome_local || "",
             local_latitude: body.local_latitude,
             local_longitude: body.local_longitude,
+            modalidade: body.modalidade || "presencial",
+            link_transmissao: body.link_transmissao || null,
             link_galeria: body.link_galeria || "",
             formulario_link: body.formulario_link || "",
             formulario_participante_link: body.formulario_participante_link || "",
