@@ -241,6 +241,9 @@ function makeSeed() {
         link_resposta: "",
       },
     ],
+    /* US22: missão, visão e valores. Começa sem nada salvo, como o servidor
+       antes do primeiro cadastro pelo painel. */
+    institucional: null,
     nextEventId: 1000,
     nextActivityId: 2000,
     nextProductId: 3000,
@@ -297,7 +300,7 @@ export async function setupApiMock(page) {
      SPA (ex.: http://localhost:5173/admin/voluntarios), apenas as chamadas de
      API (ex.: http://localhost:8000/voluntarios/...). */
   await page.route(
-    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante)(\/|\?|$)/,
+    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante|institucional)(\/|\?|$)/,
     async (route) => {
       const request = route.request();
       const method = request.method();
@@ -309,6 +312,21 @@ export async function setupApiMock(page) {
           body = JSON.parse(request.postData() || "{}");
         } catch {
           body = {};
+        }
+      }
+
+      // ---------- INSTITUCIONAL (US22) ----------
+      if (path.match(/\/institucional\/?$/)) {
+        if (method === "GET") {
+          return route.fulfill(db.institucional ? json(db.institucional) : notFound());
+        }
+        if (method === "PUT") {
+          db.institucional = {
+            missao: body.missao ?? null,
+            visao: body.visao ?? null,
+            valores: Array.isArray(body.valores) ? body.valores : [],
+          };
+          return route.fulfill(json(db.institucional));
         }
       }
 

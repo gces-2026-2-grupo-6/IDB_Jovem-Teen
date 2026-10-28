@@ -14,6 +14,7 @@ import Eventos from "../pages/Eventos";
 import EventosProximos from "../pages/EventosProximos";
 import EventoDetalhe from "../pages/EventoDetalhe";
 import Galeria from "../pages/Galeria";
+import QuemSomos from "../pages/QuemSomos";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import Unauthorized from "../pages/Unauthorized";
@@ -38,6 +39,7 @@ import AdminAdministradorCreate from "../pages/Admin/Administradores/Create";
 import AdminLideres from "../pages/Admin/Lideres";
 import AdminLiderCreate from "../pages/Admin/Lideres/Create";
 import AdminLiderEdit from "../pages/Admin/Lideres/Edit";
+import AdminInstitucional from "../pages/Admin/Institucional";
 
 export default function AppRoutes() {
   return (
@@ -86,6 +88,8 @@ export default function AppRoutes() {
             <Route path="/admin/lideres" element={<AdminLideres />} />
             <Route path="/admin/lideres/criar" element={<AdminLiderCreate />} />
             <Route path="/admin/lideres/:id/editar" element={<AdminLiderEdit />} />
+            {/* US22: missão, visão e valores ficam com o conteúdo institucional. */}
+            <Route path="/admin/institucional" element={<AdminInstitucional />} />
           </Route>
         </Route>
       </Route>
@@ -96,6 +100,7 @@ export default function AppRoutes() {
         <Route path="/eventos-proximos" element={<EventosProximos />} />
         <Route path="/eventos/:slug" element={<EventoDetalhe />} />
         <Route path="/galeria" element={<Galeria />} />
+        <Route path="/quem-somos" element={<QuemSomos />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/test-coverage" element={<TestCoverage />} />
         <Route path="*" element={<NotFound />} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Calendar as CalendarIcon, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   occursInMonth,
@@ -12,8 +12,11 @@ import {
   dateSortKey,
 } from "../../../services/eventService";
 
-const CAIXA_DE_DATA =
-  "flex flex-col items-center justify-center bg-[#FFF5EB] border border-[#FFD0B0] text-[#D5650D] rounded-xl p-4 min-w-[100px] shrink-0";
+const CAIXA_BASE = "flex flex-col items-center justify-center border rounded-xl p-4 min-w-[100px] shrink-0";
+const CAIXA_DE_DATA = `${CAIXA_BASE} bg-[#FFF5EB] border-[#FFD0B0] text-[#D5650D]`;
+/* US23: evento que já aconteceu fica em tons de cinza, para não competir com
+   a agenda que vem pela frente. */
+const CAIXA_DE_DATA_PASSADO = `${CAIXA_BASE} bg-neutral-100 border-neutral-200 text-neutral-500`;
 
 /* Caixa de data do card.
 
@@ -21,7 +24,8 @@ const CAIXA_DE_DATA =
    a virada. Dias avulsos mostram o primeiro dia do evento **naquele mês** e
    quantos outros dias ele tem ali — "até" seria falso, porque afirmaria que os
    dias entre as pontas fazem parte do evento. */
-function DateBox({ event, monthIndex, year }) {
+function DateBox({ event, monthIndex, year, passado = false }) {
+  const caixa = passado ? CAIXA_DE_DATA_PASSADO : CAIXA_DE_DATA;
   const inicio = extractDayMonth(event.date);
   const fim = extractDayMonth(event.endDate);
 
@@ -32,7 +36,7 @@ function DateBox({ event, monthIndex, year }) {
     const outros = Math.max(diasNoMes.length - 1, 0);
 
     return (
-      <div className={CAIXA_DE_DATA}>
+      <div className={caixa}>
         <span className="text-xs font-bold uppercase">{primeiro.month}</span>
         <span className="text-4xl font-black leading-none my-1">{primeiro.day}</span>
         {outros > 0 && (
@@ -45,7 +49,7 @@ function DateBox({ event, monthIndex, year }) {
   }
 
   return (
-    <div className={CAIXA_DE_DATA}>
+    <div className={caixa}>
       <span className="text-xs font-bold uppercase">{inicio.month}</span>
       <span className="text-4xl font-black leading-none my-1">{inicio.day}</span>
       {isMultiDay(event) && (
@@ -78,15 +82,14 @@ export default function CalendarioSection({ events = [] }) {
   const currentYear = currentDate.getFullYear();
 
   /* Um evento entra no mês quando qualquer dia do seu intervalo cai nele — um
-     acampamento de 28/07 a 02/08 aparece em julho e em agosto. O corte é por
-     data de término (`isOngoingOrFuture`), então evento já iniciado e ainda em
-     curso continua listado em vez de desaparecer. */
+     acampamento de 28/07 a 02/08 aparece em julho e em agosto.
+
+     US23: o calendário também guarda o que já aconteceu. Antes, o evento com
+     término no passado era descartado aqui e os meses anteriores ficavam
+     vazios. O término continua decidindo o que é passado: evento já iniciado
+     e ainda em curso segue com a aparência normal (CA3). */
   const monthEvents = events
-    .filter(
-      (event) =>
-        occursInMonth(event, currentDate.getMonth(), currentYear) &&
-        isOngoingOrFuture(event)
-    )
+    .filter((event) => occursInMonth(event, currentDate.getMonth(), currentYear))
     .sort((a, b) => dateSortKey(a.date) - dateSortKey(b.date));
 
   return (
@@ -130,22 +133,40 @@ export default function CalendarioSection({ events = [] }) {
           {monthEvents.length === 0 ? (
             <div className="text-center py-12 bg-neutral-50 rounded-2xl border border-neutral-100">
               <CalendarIcon size={48} className="mx-auto text-neutral-300 mb-4" />
-              <p className="text-neutral-500 font-medium">Nenhum evento agendado para este mês.</p>
+              <p className="text-neutral-500 font-medium">Nenhum evento neste mês.</p>
             </div>
           ) : (
             monthEvents.map(event => {
+              const passado = !isOngoingOrFuture(event);
               return (
-                <div key={event.id} className="flex flex-col md:flex-row gap-6 bg-white border border-neutral-200 rounded-2xl p-4 md:p-6 hover:shadow-md transition-shadow group">
+                <div
+                  key={event.id}
+                  data-passado={passado ? "sim" : undefined}
+                  className={`flex flex-col md:flex-row gap-6 border rounded-2xl p-4 md:p-6 hover:shadow-md transition-shadow group ${
+                    passado ? "bg-neutral-50 border-neutral-200" : "bg-white border-neutral-200"
+                  }`}
+                >
 
                   <DateBox
                     event={event}
                     monthIndex={currentDate.getMonth()}
                     year={currentYear}
+                    passado={passado}
                   />
 
                   {/* Info */}
                   <div className="flex flex-col justify-center flex-1">
-                    <h4 className="text-xl md:text-2xl font-bold text-neutral-800 mb-2 group-hover:text-[#D5650D] transition-colors">
+                    {passado && (
+                      <span className="inline-flex items-center gap-1 self-start mb-2 px-2.5 py-1 rounded-full bg-neutral-200 text-neutral-600 text-xs font-bold">
+                        <History size={12} aria-hidden="true" />
+                        Já aconteceu
+                      </span>
+                    )}
+                    <h4
+                      className={`text-xl md:text-2xl font-bold mb-2 group-hover:text-[#D5650D] transition-colors ${
+                        passado ? "text-neutral-500" : "text-neutral-800"
+                      }`}
+                    >
                       {event.title}
                     </h4>
                     <div className="flex items-center gap-2 text-neutral-500 text-sm font-medium mb-1">
@@ -161,11 +182,16 @@ export default function CalendarioSection({ events = [] }) {
 
                   {/* Action */}
                   <div className="flex items-center md:justify-end shrink-0">
+                    {/* No passado, o botão leva ao álbum quando há fotos (CA4). */}
                     <Link
                       to={`/eventos/${event.slug}`}
-                      className="px-6 py-2.5 bg-[#D5650D] text-white font-bold rounded-full hover:bg-[#C2580B] transition-colors w-full text-center md:w-auto"
+                      className={`px-6 py-2.5 font-bold rounded-full transition-colors w-full text-center md:w-auto ${
+                        passado
+                          ? "bg-white text-neutral-700 border border-neutral-300 hover:border-[#D5650D] hover:text-[#D5650D]"
+                          : "bg-[#D5650D] text-white hover:bg-[#C2580B]"
+                      }`}
                     >
-                      Detalhes
+                      {passado && event.linkGaleria ? "Ver fotos" : "Detalhes"}
                     </Link>
                   </div>
 
