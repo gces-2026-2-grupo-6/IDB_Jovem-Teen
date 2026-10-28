@@ -464,6 +464,49 @@ export async function fetchEventGallery(eventId) {
   }
 }
 
+/* US18 — álbum do evento no painel. Diferente de `fetchEventGallery`, que
+   devolve lista vazia em qualquer falha (no site, "sem fotos" basta), aqui o
+   erro sobe: a administradora precisa saber se o álbum está vazio ou se a
+   leitura falhou. */
+export async function fetchAlbumDoEvento(eventId) {
+  const id = parseEventId(eventId);
+  const { data } = await api.get(`/evento/${id}/galeria`);
+  return data.map((foto) => ({
+    id: foto.id,
+    nome: foto.nome,
+    url: foto.url_visualizacao,
+  }));
+}
+
+/* US18 — exclui fotos do álbum só no site (CA6): o servidor guarda os ids e
+   deixa de listá-las em toda galeria; o arquivo no Drive não é alterado.
+
+   Contrato esperado do back-end (a cargo do trio de back-end):
+     POST /evento/{id}/galeria/excluidas   só superadmin
+       <- { "fotos": ["<id do arquivo no Drive>", ...] }   -> 204 */
+export async function excluirFotosDoAlbum(eventId, fotoIds) {
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
+  if (!Array.isArray(fotoIds) || fotoIds.length === 0) {
+    return { success: false, error: "Selecione ao menos uma foto." };
+  }
+  const id = parseEventId(eventId);
+  try {
+    await api.post(`/evento/${id}/galeria/excluidas`, { fotos: fotoIds });
+    return { success: true, error: null };
+  } catch (error) {
+    const status = error?.response?.status;
+    if (status === 404) {
+      return { success: false, error: "O servidor ainda não oferece a exclusão de fotos." };
+    }
+    if (status === 403) {
+      return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+    }
+    return { success: false, error: getErrorMessage(error, "Não foi possível excluir as fotos.") };
+  }
+}
+
 /* Histórico de eventos (US15): os que já terminaram, do mais recente para o
    mais antigo, cada um com a capa e a contagem de fotos do seu álbum.
 
