@@ -72,22 +72,13 @@ test.describe('Dashboard Admin', () => {
     await expect(btnVols).toBeVisible();
   });
 
-  test('deve exibir grid de Produtos Cadastrados com botão Ver Todos', async ({ page }) => {
-    const cardProdutos = page.locator('div').filter({ hasText: /^Produtos CadastradosVer todos/ }).first();
-    await expect(cardProdutos).toBeVisible();
+  test('não mistura produtos com a agenda (US03, CA1)', async ({ page }) => {
+    /* Produtos e eventos ficam em telas separadas: o resumo da loja é a tela
+       Produtos, com o seu próprio item de menu. */
+    await expect(page.getByRole('heading', { name: 'Próximos Eventos' })).toBeVisible();
+    await expect(page.getByText('Produtos Cadastrados')).toHaveCount(0);
 
-    // Cards de produtos no grid
-    const imgs = cardProdutos.locator('img');
-    await expect(imgs.first()).toBeVisible();
-
-    // Verifica que cada card tem um botão Detalhes
-    const btnCardDetalhes = cardProdutos.getByRole('button', { name: 'Detalhes' }).first();
-    await expect(btnCardDetalhes).toBeVisible();
-
-    const btnVerTodos = cardProdutos.getByRole('link', { name: /Ver todos/i });
-    await expect(btnVerTodos).toBeVisible();
-
-    await btnVerTodos.click();
-    await expect(page).toHaveURL(/\/admin\/produtos/);
+    await page.getByRole('navigation').getByRole('link', { name: 'Produtos' }).click();
+    await expect(page).toHaveURL(/\/admin\/produtos$/);
   });
 });
