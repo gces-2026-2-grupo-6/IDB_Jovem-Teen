@@ -2,7 +2,12 @@ import { test, expect } from '../helpers/testWithCoverage.js';
 
 test.describe('Test Coverage Page (Internal)', () => {
   test('deve visitar a página de test-coverage para coletar funções isoladas', async ({ page }) => {
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('console', msg => {
+      // O 404 de /voluntarios/99999 é proposital: a página busca um
+      // voluntário inexistente para cobrir o caminho de erro.
+      if (msg.location().url.includes('/voluntarios/99999')) return;
+      console.log('PAGE LOG:', msg.text());
+    });
     page.on('pageerror', err => console.log('PAGE ERROR:', err));
     await page.goto('/test-coverage', { waitUntil: 'domcontentloaded' });
 

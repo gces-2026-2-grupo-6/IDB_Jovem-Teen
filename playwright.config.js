@@ -38,6 +38,20 @@ export default defineConfig({
       grepInvert: /@fonte/,
       use: { ...devices['Desktop Chrome'], baseURL: URL_BUILD },
     },
+    /* Os mesmos testes de tela em celular, um Android (Chromium) e um iPhone
+       (WebKit), porque o painel e o site sao usados pelo telefone. Os
+       testes que so fazem sentido em desktop se pulam pelo `isMobile`, com a
+       justificativa no proprio teste. */
+    {
+      name: 'mobile-android',
+      grepInvert: /@fonte/,
+      use: { ...devices['Pixel 7'], baseURL: URL_BUILD },
+    },
+    {
+      name: 'mobile-iphone',
+      grepInvert: /@fonte/,
+      use: { ...devices['iPhone 13'], baseURL: URL_BUILD },
+    },
     {
       /* Testes que importam modulo de `src/` dentro do navegador. Rodam no dev
          porque o caminho `/src/...` nao existe no build. */

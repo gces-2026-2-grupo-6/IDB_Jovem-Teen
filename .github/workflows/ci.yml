@@ -49,7 +49,9 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: build
-    runs-on: ubuntu-latest
+    # Versao fixa: o ubuntu-latest passou a ser o 26.04, e o Playwright 1.60
+    # nao instala Chromium nem WebKit nele.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -73,15 +75,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+          key: playwright-chromium-webkit-${{ hashFiles('package-lock.json') }}
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright Chromium e WebKit
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
 
       - run: npx playwright test
 

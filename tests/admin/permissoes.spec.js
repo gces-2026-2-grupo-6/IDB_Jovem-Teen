@@ -245,7 +245,7 @@ test.describe('Tela de administradores', () => {
     await setupApiMock(page);
   });
 
-  test('lista os administradores e oferece o cadastro', async ({ page }) => {
+  test('lista os administradores e oferece o cadastro', async ({ page, isMobile }) => {
     await serveAdmins(page, ADMINS);
     await page.goto('/admin/administradores');
 
@@ -253,8 +253,12 @@ test.describe('Tela de administradores', () => {
     await expect(page.getByRole('link', { name: /Adicionar Administrador/i })).toBeVisible();
     await expect(page.getByText('Raquel Gomes')).toBeVisible();
     await expect(page.getByText('samuel@idb.org')).toBeVisible();
-    /* A tela não inventa setor de terceiros: ela diz onde isso é definido. */
-    await expect(page.getByText('Setores definidos no Keycloak')).toBeVisible();
+    /* A tela não inventa setor de terceiros: ela diz onde isso é definido.
+       Só no desktop: no celular essa coluna é escondida de propósito
+       (`hidden sm:block`). */
+    if (!isMobile) {
+      await expect(page.getByText('Setores definidos no Keycloak')).toBeVisible();
+    }
   });
 
   test('não deixa a superadministradora remover o próprio acesso', async ({ page }) => {

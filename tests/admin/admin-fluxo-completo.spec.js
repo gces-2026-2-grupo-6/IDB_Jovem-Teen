@@ -3,7 +3,11 @@ import { mockKeycloakLogin } from '../helpers/adminAuth';
 import { setupApiMock } from '../helpers/apiMock';
 
 test.describe('Fluxo Completo de Administração', () => {
-  test('Fluxo completo: Login -> Dashboard -> Eventos -> Produtos -> Logout', async ({ page }) => {
+  test('Fluxo completo: Login -> Dashboard -> Eventos -> Produtos -> Logout', async ({ page, isMobile }) => {
+    /* Só desktop: o fluxo clica nos itens da barra lateral, que no celular
+       fica recolhida atrás do botão "Abrir menu". O caminho pelo menu móvel
+       é coberto em admin-mobile.spec.js. */
+    test.skip(isMobile, 'barra lateral recolhida no celular');
     await mockKeycloakLogin(page);
     await setupApiMock(page);
 

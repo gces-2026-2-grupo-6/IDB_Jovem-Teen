@@ -75,9 +75,10 @@ test.describe('Página Eventos Próximos', () => {
     const fallbackMsg = page.getByText(/User denied Geolocation|Permissão de localização negada|Mostrando todos os eventos por data/i);
     await expect(fallbackMsg.first()).toBeVisible();
 
-    // A lista de eventos deve aparecer
+    // A lista de eventos deve aparecer. A asserção espera a lista: contar
+    // uma vez só corria contra a carga dos eventos e falhava no WebKit.
     const list = page.locator('a[href^="/eventos/"]');
-    await expect(await list.count()).toBeGreaterThan(0);
+    await expect(list.first()).toBeVisible();
   });
 
   test('deve interagir com os marcadores do mapa (abrir e fechar)', async ({ page }) => {
@@ -104,11 +105,14 @@ test.describe('Página Eventos Próximos', () => {
     await expect(marcadores).toHaveCount(3);
     const marcadorEvento = marcadores.nth(1);
     await marcadorEvento.waitFor({ state: 'visible' });
-    await marcadorEvento.click({ force: true });
-
-    // O popup (com botão 'Ver evento') deve aparecer
+    // O popup (com botão 'Ver evento') deve aparecer. O clique se repete: no
+    // WebKit o primeiro toque às vezes chega antes do mapa assentar e o
+    // Leaflet o descarta.
     const popup = page.locator('.leaflet-popup');
-    await expect(popup).toBeVisible();
+    await expect(async () => {
+      await marcadorEvento.click({ force: true });
+      await expect(popup).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(popup.getByRole('link', { name: /Ver evento/i })).toBeVisible();
 
     // Testa fechar o popup

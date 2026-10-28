@@ -72,9 +72,12 @@ test.describe('Dashboard Admin', () => {
     await expect(btnVols).toBeVisible();
   });
 
-  test('não mistura produtos com a agenda (US03, CA1)', async ({ page }) => {
+  test('não mistura produtos com a agenda (US03, CA1)', async ({ page, isMobile }) => {
     /* Produtos e eventos ficam em telas separadas: o resumo da loja é a tela
        Produtos, com o seu próprio item de menu. */
+    /* Só desktop: no celular a barra lateral fica recolhida atrás do botão
+       "Abrir menu". O caminho pelo menu móvel é coberto em admin-mobile.spec.js. */
+    test.skip(isMobile, 'barra lateral recolhida no celular');
     await expect(page.getByRole('heading', { name: 'Próximos Eventos' })).toBeVisible();
     await expect(page.getByText('Produtos Cadastrados')).toHaveCount(0);
 

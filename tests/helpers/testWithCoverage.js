@@ -16,6 +16,12 @@ export const test = baseTest.extend({
 
     await setupApiMocks(context);
 
+    /* O <Analytics /> do Vercel busca este script, que só existe com o site
+       hospedado no Vercel. Fora dele a busca dá 404 e enche o log. */
+    await context.route('**/_vercel/insights/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/javascript', body: '' })
+    );
+
     const coverages = [];
     await context.exposeFunction('__playwright_coverage', (coverage) => {
       coverages.push(coverage);

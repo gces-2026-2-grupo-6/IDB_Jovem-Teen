@@ -162,16 +162,20 @@ test.describe('Convidados — listagem e cadastro', () => {
     await serveEventos(page, estado);
   });
 
-  test('lista os convidados com função e uso em eventos', async ({ page }) => {
+  test('lista os convidados com função e uso em eventos', async ({ page, isMobile }) => {
     await page.goto('/admin/palestrantes');
 
     await expect(page.getByRole('heading', { name: 'Convidados' })).toBeVisible();
     await expect(page.getByText('Pr. Samuel Tavares')).toBeVisible();
     await expect(page.getByText('Adoração Viva')).toBeVisible();
 
-    /* O reaproveitamento fica visível: Samuel já está num evento. */
-    await expect(page.getByText('Em 1 evento')).toBeVisible();
-    await expect(page.getByText('Ainda não vinculado').first()).toBeVisible();
+    /* O reaproveitamento fica visível: Samuel já está num evento. Só no
+       desktop: no celular essa coluna é escondida de propósito
+       (`hidden sm:block`) para a linha caber na tela. */
+    if (!isMobile) {
+      await expect(page.getByText('Em 1 evento')).toBeVisible();
+      await expect(page.getByText('Ainda não vinculado').first()).toBeVisible();
+    }
   });
 
   test('busca por nome e por função, ignorando acento', async ({ page }) => {
