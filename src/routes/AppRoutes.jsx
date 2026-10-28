@@ -39,6 +39,7 @@ import AdminAdministradorCreate from "../pages/Admin/Administradores/Create";
 import AdminLideres from "../pages/Admin/Lideres";
 import AdminLiderCreate from "../pages/Admin/Lideres/Create";
 import AdminLiderEdit from "../pages/Admin/Lideres/Edit";
+import AdminInstitucional from "../pages/Admin/Institucional";
 
 export default function AppRoutes() {
   return (
@@ -87,6 +88,8 @@ export default function AppRoutes() {
             <Route path="/admin/lideres" element={<AdminLideres />} />
             <Route path="/admin/lideres/criar" element={<AdminLiderCreate />} />
             <Route path="/admin/lideres/:id/editar" element={<AdminLiderEdit />} />
+            {/* US22: missão, visão e valores ficam com o conteúdo institucional. */}
+            <Route path="/admin/institucional" element={<AdminInstitucional />} />
           </Route>
         </Route>
       </Route>
