@@ -49,7 +49,9 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: build
-    runs-on: ubuntu-latest
+    # Versao fixa: o ubuntu-latest passou a ser o 26.04, e o Playwright 1.60
+    # nao instala Chromium nem WebKit nele.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
