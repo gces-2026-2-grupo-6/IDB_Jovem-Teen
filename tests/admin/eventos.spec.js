@@ -347,7 +347,7 @@ test.describe('Admin - Cobertura Extra de Branches', () => {
 
     await page.getByRole('button', { name: 'Salvar' }).click();
     await page.waitForTimeout(500);
-    expect(alertMessage).toContain('Latitude e longitude');
+    expect(alertMessage).toContain('Escolha o local do evento no mapa');
   });
 
   test('deve exibir alert ao editar evento limpando o título (Edit.jsx L32)', async ({ page }) => {

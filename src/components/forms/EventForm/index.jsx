@@ -15,6 +15,8 @@ import {
   DollarSign,
   Link2,
   FileText,
+  Globe,
+  Video,
 } from "lucide-react";
 import LocationPicker from "./LocationPicker";
 import ConvidadosPicker from "./ConvidadosPicker";
@@ -60,6 +62,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
     valorInvestimento: initialData.valorInvestimento || "",
     linkPagamento: initialData.linkPagamento || "",
     linkRegulamento: initialData.linkRegulamento || "",
+    /* US19: evento salvo antes da história vem sem o campo e é presencial. */
+    modalidade: initialData.modalidade === "online" ? "online" : "presencial",
+    linkTransmissao: initialData.linkTransmissao || "",
     latitude: initialData.latitude ?? "",
     longitude: initialData.longitude ?? "",
     startDay: start.day,
@@ -94,6 +99,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
       const restante = prev.filter((_, i) => i !== index);
       return restante.length > 0 ? restante : [""];
     });
+
+  const setModalidade = (modalidade) =>
+    setForm((prev) => ({ ...prev, modalidade }));
 
   const handleLocationChange = (lat, lng) => {
     setForm((prev) => ({
@@ -259,19 +267,75 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         <hr className="my-5 border-gray-100" />
 
-        {/* Local — selecionado direto no mapa */}
+        {/* Modalidade (US19) — o online dispensa o endereço */}
         <div className="mb-1">
-          <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
-            <MapPin size={16} className="text-[#FF6D2C]" />
-            Local do evento
-          </label>
-          <LocationPicker
-            latitude={form.latitude}
-            longitude={form.longitude}
-            initialAddress={initialData.location || ""}
-            onChange={handleLocationChange}
-          />
+          <span id="modalidade-label" className="block text-sm font-bold text-[#1E1E1E] mb-2">
+            Modalidade
+          </span>
+          <div role="radiogroup" aria-labelledby="modalidade-label" className="flex flex-col sm:flex-row gap-2">
+            {[
+              { valor: "presencial", rotulo: "Presencial", icone: <MapPin size={16} /> },
+              { valor: "online", rotulo: "Online", icone: <Globe size={16} /> },
+            ].map(({ valor, rotulo, icone }) => (
+              <button
+                key={valor}
+                type="button"
+                role="radio"
+                aria-checked={form.modalidade === valor}
+                onClick={() => setModalidade(valor)}
+                className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-colors ${
+                  form.modalidade === valor
+                    ? "border-[#FF6D2C] bg-[#FFF1E8] text-[#D5650D]"
+                    : "border-gray-300 bg-[#FFF8F3] text-[#1E1E1E]/70 hover:border-[#FF6D2C]/50"
+                }`}
+              >
+                {icone}
+                {rotulo}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {form.modalidade === "online" ? (
+          /* Online: link da transmissão no lugar do endereço */
+          <div className="mb-1">
+            <label
+              htmlFor="linkTransmissao"
+              className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2"
+            >
+              <Video size={16} className="text-[#FF6D2C]" />
+              Link da transmissão
+            </label>
+            <input
+              id="linkTransmissao"
+              type="url"
+              name="linkTransmissao"
+              value={form.linkTransmissao}
+              onChange={handleChange}
+              placeholder="https://youtube.com/..."
+              className={inputClass}
+            />
+            <p className="text-xs text-[#1E1E1E]/50 mt-2">
+              Evento online não tem endereço nem mapa. O link pode ser cadastrado depois.
+            </p>
+          </div>
+        ) : (
+          /* Presencial: local selecionado direto no mapa */
+          <div className="mb-1">
+            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+              <MapPin size={16} className="text-[#FF6D2C]" />
+              Local do evento
+            </label>
+            <LocationPicker
+              latitude={form.latitude}
+              longitude={form.longitude}
+              initialAddress={initialData.address || ""}
+              onChange={handleLocationChange}
+            />
+          </div>
+        )}
 
         <hr className="my-5 border-gray-100" />
 
