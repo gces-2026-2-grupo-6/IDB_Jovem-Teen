@@ -17,6 +17,7 @@ export default function AdminEventos() {
   const [events, setEvents] = useState({ proximos: [], emAndamento: [], anteriores: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -40,15 +41,18 @@ export default function AdminEventos() {
   };
 
   const handleConfirmDelete = async () => {
-    if (deleteModal.data) {
-      const result = await handleDeleteEvent(deleteModal.data.id);
-      deleteModal.close();
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      loadEvents();
+    if (!deleteModal.data || excluindo) return;
+    /* Trava os botões enquanto a exclusão roda: um segundo clique pediria a
+       exclusão de novo e responderia "Evento não encontrado". */
+    setExcluindo(true);
+    const result = await handleDeleteEvent(deleteModal.data.id);
+    setExcluindo(false);
+    deleteModal.close();
+    if (!result.success) {
+      setError(result.error);
+      return;
     }
+    loadEvents();
   };
 
   const rightContent = (
@@ -141,7 +145,8 @@ export default function AdminEventos() {
         isOpen={deleteModal.isOpen}
         onClose={deleteModal.close}
         onConfirm={handleConfirmDelete}
-        eventTitle={deleteModal.data?.title}
+        eventId={deleteModal.data?.id}
+        excluindo={excluindo}
       />
     </div>
   );

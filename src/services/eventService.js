@@ -71,9 +71,23 @@ export function buildGoogleCalendarUrl(event) {
     text: event.title || "Evento",
     dates: `${start}/${end}`,
     details: event.description || "",
-    location: event.location || "",
+    /* No evento online, quem salva na agenda leva o link da transmissão. */
+    location: isOnlineEvent(event) ? event.linkTransmissao || LOCAL_EVENTO_ONLINE : event.location || "",
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/* US19: o evento é online ou presencial. O online não tem endereço e guarda
+   o link da transmissão; eventos antigos, sem o campo, são presenciais. */
+export const MODALIDADES_EVENTO = ["presencial", "online"];
+export const LOCAL_EVENTO_ONLINE = "Evento online";
+
+export function isOnlineEvent(event) {
+  return event?.modalidade === "online";
+}
+
+export function isValidHttpUrl(value) {
+  return /^https?:\/\/\S+$/i.test(String(value || "").trim());
 }
 
 export function toFormResponseUrl(url) {
@@ -87,6 +101,7 @@ export function toFormResponseUrl(url) {
 
 function adaptEvent(apiEvent) {
   if (!apiEvent) return null;
+  const modalidade = apiEvent.modalidade === "online" ? "online" : "presencial";
   return {
     id: apiEvent.evento_id,
     title: apiEvent.nome,
@@ -99,7 +114,13 @@ function adaptEvent(apiEvent) {
        isolado aqui: se o back-end fechar com outro nome, só esta linha muda. */
     days: normalizeEventDays(apiEvent.datas),
     time: formatTimeRange(apiEvent.data_inicio, apiEvent.data_fim),
-    location: apiEvent.nome_local || "",
+    /* `location` é o texto exibido nas telas; no online ele diz que o evento
+       é online, para nenhum card ficar com o local em branco. O endereço de
+       verdade fica em `address`, que o formulário usa no mapa. */
+    modalidade,
+    location: modalidade === "online" ? LOCAL_EVENTO_ONLINE : apiEvent.nome_local || "",
+    address: apiEvent.nome_local || "",
+    linkTransmissao: apiEvent.link_transmissao || "",
     latitude: apiEvent.local_latitude,
     longitude: apiEvent.local_longitude,
     linkGaleria: apiEvent.link_galeria || "",
@@ -127,12 +148,16 @@ function adaptEvent(apiEvent) {
 function toApiEvent(form) {
   const toIso = (v) => (v ? `${v}:00`.slice(0, 19) : null);
   const dias = normalizeEventDays(form.days);
+  const online = form.modalidade === "online";
   return {
     nome: form.title,
     tipo_evento: form.tipoEvento || null,
     descricao: form.description || null,
-    local_latitude: Number(form.latitude),
-    local_longitude: Number(form.longitude),
+    /* US19: o online não tem endereço; o presencial continua igual. */
+    modalidade: online ? "online" : "presencial",
+    link_transmissao: online ? (form.linkTransmissao || "").trim() || null : null,
+    local_latitude: online ? null : Number(form.latitude),
+    local_longitude: online ? null : Number(form.longitude),
     data_inicio: toIso(form.date),
     data_fim: toIso(form.endDate),
     /* `datas` só vai preenchido quando o evento tem dias específicos. Um
@@ -319,6 +344,22 @@ function validateEventDates(data) {
   return null;
 }
 
+/* US19: no presencial o endereço é obrigatório; no online, o link é
+   opcional, mas, se vier, precisa ser um endereço da web. */
+function validateEventLocation(data) {
+  if (data.modalidade === "online") {
+    const link = (data.linkTransmissao || "").trim();
+    if (link && !isValidHttpUrl(link)) {
+      return "O link da transmissão precisa começar com https:// ou http://.";
+    }
+    return null;
+  }
+  if (data.latitude === "" || data.longitude === "" || data.latitude == null || data.longitude == null) {
+    return "Escolha o local do evento no mapa. Se o evento for online, marque a opção Online.";
+  }
+  return null;
+}
+
 export async function handleCreateEvent(data) {
   if (!data.title || !data.title.trim()) {
     return { success: false, error: "Nome do evento é obrigatório." };
@@ -330,8 +371,9 @@ export async function handleCreateEvent(data) {
   if (erroDeData) {
     return { success: false, error: erroDeData };
   }
-  if (data.latitude === "" || data.longitude === "" || data.latitude == null || data.longitude == null) {
-    return { success: false, error: "Latitude e longitude são obrigatórias." };
+  const erroDeLocal = validateEventLocation(data);
+  if (erroDeLocal) {
+    return { success: false, error: erroDeLocal };
   }
   try {
     const { data: created } = await api.post("/evento/", toApiEvent(data));
@@ -354,6 +396,10 @@ export async function handleUpdateEvent(slugOrId, data) {
   if (erroDeData) {
     return { success: false, error: erroDeData };
   }
+  const erroDeLocal = validateEventLocation(data);
+  if (erroDeLocal) {
+    return { success: false, error: erroDeLocal };
+  }
   const id = parseEventId(slugOrId);
   try {
     const { data: updated } = await api.put(`/evento/${id}`, toApiEvent(data));
@@ -362,6 +408,25 @@ export async function handleUpdateEvent(slugOrId, data) {
     return { success: true, event: updEvent };
   } catch (error) {
     return { success: false, error: getErrorMessage(error, "Erro ao atualizar evento.") };
+  }
+}
+
+/* US20 (A1): o que será apagado junto com o evento, para a confirmação.
+   Devolve `null` se a contagem não puder ser lida — o modal avisa e a
+   exclusão continua possível. */
+export async function fetchDeletionSummary(slugOrId) {
+  const id = parseEventId(slugOrId);
+  if (!id) return null;
+  try {
+    const { data } = await api.get(`/evento/${id}/exclusao`);
+    return {
+      participantes: Number(data?.participantes) || 0,
+      voluntarios: Number(data?.voluntarios) || 0,
+      atividades: Number(data?.atividades) || 0,
+      convidados: Number(data?.convidados) || 0,
+    };
+  } catch {
+    return null;
   }
 }
 

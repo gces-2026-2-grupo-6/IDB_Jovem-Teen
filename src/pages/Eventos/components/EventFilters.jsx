@@ -3,12 +3,15 @@ import { ChevronDown } from "lucide-react";
 const tiposEvento = ["Tipo de evento", "Conferência", "Acampamento", "Campanha Nacional", "Outros"];
 const regioes = ["Região", "Norte", "Nordeste", "Centro-Oeste", "Sul", "Sudeste"];
 const datas = ["Data", "Esta semana", "Este mês", "Próximos 3 meses"];
+/* US19 (CA5): filtro por modalidade, que preserva a ordem cronológica. */
+const modalidades = ["Modalidade", "Presencial", "Online"];
 
-function FilterSelect({ id, options, value, onChange }) {
+function FilterSelect({ id, label, options, value, onChange }) {
   return (
     <div className="relative">
       <select
         id={id}
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="appearance-none bg-[#FF6D2C] text-white font-semibold text-sm pl-4 pr-9 py-2.5 rounded-lg cursor-pointer focus:outline-none hover:bg-[#e65c18] transition-colors min-w-[130px]"
@@ -50,6 +53,13 @@ export default function EventFilters({ filters, onChange }) {
         options={datas}
         value={filters.data}
         onChange={(v) => onChange({ ...filters, data: v })}
+      />
+      <FilterSelect
+        id="filter-modalidade"
+        label="Modalidade"
+        options={modalidades}
+        value={filters.modalidade}
+        onChange={(v) => onChange({ ...filters, modalidade: v })}
       />
     </div>
   );
