@@ -14,6 +14,7 @@ import Eventos from "../pages/Eventos";
 import EventosProximos from "../pages/EventosProximos";
 import EventoDetalhe from "../pages/EventoDetalhe";
 import Galeria from "../pages/Galeria";
+import QuemSomos from "../pages/QuemSomos";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import Unauthorized from "../pages/Unauthorized";
@@ -96,6 +97,7 @@ export default function AppRoutes() {
         <Route path="/eventos-proximos" element={<EventosProximos />} />
         <Route path="/eventos/:slug" element={<EventoDetalhe />} />
         <Route path="/galeria" element={<Galeria />} />
+        <Route path="/quem-somos" element={<QuemSomos />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/test-coverage" element={<TestCoverage />} />
         <Route path="*" element={<NotFound />} />

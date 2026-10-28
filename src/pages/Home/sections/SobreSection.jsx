@@ -38,12 +38,13 @@ export default function SobreSection() {
             cursorClassName="bg-black"
           />
         </div>
-        <a
-          href="#contato"
+        {/* US22: "Saiba mais" leva à missão, visão e valores. */}
+        <Link
+          to="/quem-somos"
           className="inline-block bg-white text-[#D5650D] hover:bg-neutral-100 transition-colors px-10 py-2 md:py-3 rounded-[2rem] text-lg md:text-xl tracking-wide shadow-sm"
         >
           Saiba mais
-        </a>
+        </Link>
       </div>
     </section>
   );
