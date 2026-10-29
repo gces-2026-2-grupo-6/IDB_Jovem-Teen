@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, Clock } from "lucide-react";
-import { formatEventDates, isMultiDay, toFormResponseUrl } from "../../../services/eventService";
+import { formatEventDates, isMultiDay, toFormResponseUrl, mostrarInscricao } from "../../../services/eventService";
+import EventStatusNotice, { EventStatusBadge } from "../../../components/ui/EventStatusNotice";
 
 export default function EventList({ events }) {
   const navigate = useNavigate();
@@ -35,6 +36,9 @@ export default function EventList({ events }) {
               alt={event.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
+            {/* O evento cancelado ou adiado continua na lista (US14): some o
+                botão de inscrição, não o evento. */}
+            <EventStatusBadge event={event} className="absolute top-3 left-3 shadow-sm" />
           </Link>
 
           {/* Info */}
@@ -59,8 +63,13 @@ export default function EventList({ events }) {
               </div>
             </div>
 
+            <EventStatusNotice event={event} className="mb-4" />
+
             {/* Botões — o voluntariado só aparece nos eventos que abriram
-                esse fluxo, para não prometer o que não existe. */}
+                esse fluxo, para não prometer o que não existe. Em evento
+                cancelado ou adiado a inscrição some por inteiro (US14, CA4):
+                "Veja mais" fica, porque é lá que o visitante entende o que
+                aconteceu. */}
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
                 <Link
@@ -69,14 +78,16 @@ export default function EventList({ events }) {
                 >
                   Veja mais →
                 </Link>
-                <button
-                  onClick={() => inscreverParticipante(event)}
-                  className="flex-1 text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
-                >
-                  Inscreva-se
-                </button>
+                {mostrarInscricao(event) && (
+                  <button
+                    onClick={() => inscreverParticipante(event)}
+                    className="flex-1 text-sm font-semibold bg-[#FF6D2C] hover:bg-[#e65c18] text-white rounded-lg px-4 py-2 transition-colors"
+                  >
+                    Inscreva-se
+                  </button>
+                )}
               </div>
-              {event.linkFormularioVoluntarios && (
+              {mostrarInscricao(event) && event.linkFormularioVoluntarios && (
                 <button
                   onClick={() => inscreverVoluntario(event)}
                   className="w-full text-sm font-semibold border-2 border-[#FF6D2C] text-[#FF6D2C] hover:bg-[#FF6D2C] hover:text-white rounded-lg px-4 py-2 transition-colors"

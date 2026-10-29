@@ -11,6 +11,7 @@ import {
   formatEventDates,
   dateSortKey,
 } from "../../../services/eventService";
+import EventStatusNotice from "../../../components/ui/EventStatusNotice";
 
 const CAIXA_DE_DATA =
   "flex flex-col items-center justify-center bg-[#FFF5EB] border border-[#FFD0B0] text-[#D5650D] rounded-xl p-4 min-w-[100px] shrink-0";
@@ -157,6 +158,10 @@ export default function CalendarioSection({ events = [] }) {
                       <span>{event.location}</span>
                     </div>
                     <p className="text-neutral-600 text-sm line-clamp-2 mt-2">{event.description}</p>
+                    {/* O evento cancelado ou adiado continua no calendário
+                        (US14): o visitante precisa justamente encontrar o
+                        aviso onde procuraria a data. */}
+                    <EventStatusNotice event={event} className="mt-3 self-start" />
                   </div>
 
                   {/* Action */}

@@ -11,6 +11,7 @@ export default function AdminLiderEdit() {
 
   const [leader, setLeader] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -30,13 +31,17 @@ export default function AdminLiderEdit() {
   }, [id]);
 
   const handleSubmit = async (formData) => {
+    setError(null);
     const result = await handleUpdateLeader(id, formData);
 
     if (result.success) {
       navigate("/admin/lideres", { state: { flash: "Diretor/líder atualizado com sucesso." } });
-    } else {
-      alert(result.error);
+      return;
     }
+
+    /* A regra de cargo único vale também na edição (US10, CA8) — é o caminho
+       que costuma escapar quando a validação entra só no cadastro. */
+    setError(result.error);
   };
 
   if (loading) {
@@ -60,7 +65,7 @@ export default function AdminLiderEdit() {
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionTitle title="Edição de Diretor/Líder" onBack={() => navigate("/admin/lideres")} />
-      <LeaderForm initialData={leader} onSubmit={handleSubmit} submitLabel="Salvar" />
+      <LeaderForm initialData={leader} onSubmit={handleSubmit} submitLabel="Salvar" error={error} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import SectionTitle from "../../../components/ui/SectionTitle";
 import { MapPin } from "lucide-react";
 import DashboardProductCard from "./components/DashboardProductCard";
 import CalendarMini from "./components/CalendarMini";
+import LinksLideresCard from "./components/LinksLideresCard";
 import EmptyState from "../../../components/ui/EmptyState";
 import { fetchAllEvents, getEventStatus, extractDayMonth } from "../../../services/eventService";
 import { fetchAllProducts } from "../../../services/productService";
@@ -137,8 +138,14 @@ export default function AdminDashboard() {
 
       {error && <EmptyState message={error} className="border-red-100 bg-red-50/60 text-red-700" />}
 
+      {/* US10 — os dois links fixados. O componente não renderiza nada para
+          quem não é superadministradora, então não há condição a repetir
+          aqui. */}
+      <LinksLideresCard />
+
       {/* Quem não administra eventos nem produtos não tem o que ver aqui —
-          o painel resume esses dois setores. */}
+          o painel resume esses dois setores. A superadministradora nunca cai
+          neste caso, porque administra todos. */}
       {!veEventos && !veProdutos && (
         <EmptyState message="Use o menu ao lado para acessar os setores que você administra." />
       )}

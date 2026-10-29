@@ -29,7 +29,9 @@ export function useEventDetails() {
           fetchEventGallery(ev.id).catch(() => []),
           fetchSpeakersByEvent(ev.id).catch(() => []),
         ]);
-        const gallery = fotos.map((f) => f.url);
+        /* As fotos seguem como objeto, e não só a URL de exibição: cada uma
+           carrega também o `downloadUrl` que o botão "Baixar" usa (US11, CA5). */
+        const gallery = fotos;
         if (active) setEvent({ ...ev, schedule, gallery, speakers });
       })
       .catch(() => active && setError("Evento não encontrado"))

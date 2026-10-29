@@ -5,7 +5,9 @@ import {
   formatEventDates,
   formatEventTimeLabel,
   toFormResponseUrl,
+  mostrarInscricao,
 } from "../../../services/eventService";
+import EventStatusNotice from "../../../components/ui/EventStatusNotice";
 
 function abrirFormulario(link) {
   window.open(toFormResponseUrl(link), "_blank", "noopener,noreferrer");
@@ -39,6 +41,11 @@ export default function EventHero({ event }) {
                 {event.title}
               </span>
             </h1>
+
+            {/* Aviso de cancelamento ou adiamento (US14, CA2) — vem antes da
+                descrição porque é a informação que muda a decisão de quem
+                abriu a página. */}
+            <EventStatusNotice event={event} className="self-start" />
 
             {/* Descrição */}
             <p className="text-[#1E1E1E]/70 text-sm md:text-base leading-relaxed max-w-md">
@@ -80,8 +87,11 @@ export default function EventHero({ event }) {
             {/* Inscrição — dois fluxos distintos (US09): participar do evento
                 e trabalhar nele. Cada botão só existe quando a administradora
                 cadastrou o link daquele fluxo; antes, "Seja Voluntário"
-                aparecia sempre e não fazia nada nos eventos sem formulário. */}
-            {(event.linkFormularioParticipantes || event.linkFormularioVoluntarios) && (
+                aparecia sempre e não fazia nada nos eventos sem formulário.
+                Evento cancelado ou adiado não mostra nenhum dos dois enquanto
+                durar a situação (US14, CA4). */}
+            {mostrarInscricao(event) &&
+              (event.linkFormularioParticipantes || event.linkFormularioVoluntarios) && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {event.linkFormularioParticipantes && (
                   <button

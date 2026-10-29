@@ -156,7 +156,11 @@ export async function handleCreateLeader(data) {
     const leader = await createLeader(data);
     return { success: true, leader };
   } catch (err) {
-    return { success: false, error: resolveError(err, "Não foi possível cadastrar o diretor/líder.") };
+    return {
+      success: false,
+      error: resolveError(err, "Não foi possível cadastrar o diretor/líder."),
+      status: err?.response?.status,
+    };
   }
 }
 
@@ -168,7 +172,11 @@ export async function handleUpdateLeader(id, data) {
     const leader = await updateLeader(id, data);
     return { success: true, leader };
   } catch (err) {
-    return { success: false, error: resolveError(err, "Não foi possível atualizar o diretor/líder.") };
+    return {
+      success: false,
+      error: resolveError(err, "Não foi possível atualizar o diretor/líder."),
+      status: err?.response?.status,
+    };
   }
 }
 
@@ -186,5 +194,22 @@ function resolveError(err, fallback) {
   if (status === 401 || status === 403) {
     return "Sessão expirada ou sem permissão. Faça login novamente.";
   }
-  return err?.response?.data?.detail || fallback;
+  /* 409 — cargo já ocupado (US10, CA8). O back-end monta a frase inteira,
+     dizendo quem ocupa o cargo e como liberá-lo ("marque o líder atual como
+     diretor anterior antes de cadastrar o novo"), então reescrevê-la aqui só
+     perderia informação. O cargo é o par cargo + região: "Diretor Regional" do
+     Sul e do Norte convivem (CA9). */
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string" && detail) return detail;
+  /* O 422 do FastAPI chega como lista de erros de campo. */
+  if (Array.isArray(detail)) {
+    const msg = detail
+      .map((d) => (typeof d === "string" ? d : d?.msg))
+      .filter(Boolean)
+      .join("; ")
+      .replace(/Value error,\s*/g, "");
+    if (msg) return msg;
+  }
+  return fallback;
 }
+

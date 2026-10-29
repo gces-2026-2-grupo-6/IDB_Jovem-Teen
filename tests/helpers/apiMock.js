@@ -138,13 +138,52 @@ function makeSeed() {
     },
     // Fotos de galeria por evento (formato da API: nome + url_visualizacao)
     galleries: {
+      /* `url_download` passou a vir em cada foto (US11, CA5): é o destino do
+         botão "Baixar", montado pelo back-end. */
       1: [
-        { id: "g1", nome: "foto1.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto1=w1200" },
-        { id: "g2", nome: "foto2.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto2=w1200" },
+        { id: "g1", nome: "foto1.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto1=w1200", url_download: "http://api.test/drive/download/foto1" },
+        { id: "g2", nome: "foto2.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto2=w1200", url_download: "http://api.test/drive/download/foto2" },
       ],
       3: [
-        { id: "g3", nome: "foto3.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto3=w1200" },
+        { id: "g3", nome: "foto3.jpg", url_visualizacao: "https://lh3.googleusercontent.com/d/foto3=w1200", url_download: "http://api.test/drive/download/foto3" },
       ],
+    },
+    /* Materiais para download (US11) e links fixados do painel (US10). */
+    materiais: [
+      {
+        material_id: 1,
+        titulo: "Manual do Líder 2026",
+        descricao: "Versão para impressão",
+        tipo: "documento",
+        link: "https://drive.google.com/file/d/manual/view",
+        url_download: "http://api.test/drive/download/manual",
+        criado_em: "2026-10-26T19:18:29Z",
+      },
+      {
+        material_id: 2,
+        titulo: "Vídeo institucional",
+        descricao: "",
+        tipo: "video",
+        /* Link externo: `url_download` é o próprio link, e aí o certo é abrir
+           em nova aba em vez de baixar. */
+        link: "https://youtube.com/watch?v=abc",
+        url_download: "https://youtube.com/watch?v=abc",
+        criado_em: "2026-10-20T10:00:00Z",
+      },
+      {
+        material_id: 3,
+        titulo: "Foto oficial da diretoria",
+        descricao: null,
+        tipo: "foto",
+        link: "https://drive.google.com/file/d/diretoria/view",
+        url_download: "http://api.test/drive/download/diretoria",
+        criado_em: "2026-10-18T10:00:00Z",
+      },
+    ],
+    painelLinks: {
+      link_cadastro_lideres: "https://forms.gle/cadastro-lideres",
+      /* Ainda não configurado: exercita o estado "Configurar" do painel. */
+      link_planilha_lideres: null,
     },
     // Líderes (organograma da Home e CRUD do painel)
     lideres: [
@@ -244,6 +283,7 @@ function makeSeed() {
     nextEventId: 1000,
     nextActivityId: 2000,
     nextProductId: 3000,
+    nextMaterialId: 4000,
     nextLiderId: 400,
     nextSpeakerId: 500,
     nextVoluntarioId: 1000,
@@ -264,6 +304,45 @@ const TRANSPARENT_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64"
 );
+
+/* Cargo ocupado (US10, CA8 e CA9).
+
+   O cargo é o par cargo + região: "Diretor Regional" do Sul e do Norte
+   convivem. A comparação ignora acento, caixa e hífen, e líder marcado como
+   diretor anterior não ocupa cargo. */
+function chaveDoCargo(cargo, regiao) {
+  const normalizar = (texto) =>
+    String(texto || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/-/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  return `${normalizar(cargo)}|${normalizar(regiao)}`;
+}
+
+function ocupanteDoCargo(db, body, ignorarId = null) {
+  if (body.is_antigo) return null;
+  const alvo = chaveDoCargo(body.cargo, body.regiao);
+  return (
+    db.lideres.find(
+      (l) =>
+        !l.is_antigo &&
+        l.lider_id !== ignorarId &&
+        chaveDoCargo(l.cargo, l.regiao) === alvo
+    ) || null
+  );
+}
+
+function erroCargoOcupado(ocupante, body) {
+  return json(
+    {
+      detail: `O cargo '${body.cargo}' na região ${body.regiao} já está ocupado por ${ocupante.nome}. Marque o líder atual como diretor anterior antes de cadastrar o novo.`,
+    },
+    409
+  );
+}
 
 export async function setupApiMock(page) {
   const db = makeSeed();
@@ -297,14 +376,16 @@ export async function setupApiMock(page) {
      SPA (ex.: http://localhost:5173/admin/voluntarios), apenas as chamadas de
      API (ex.: http://localhost:8000/voluntarios/...). */
   await page.route(
-    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante)(\/|\?|$)/,
+    /^https?:\/\/[^/]+\/(evento|produto|voluntarios|formulario|mapa|lider|banda-palestrante|painel|material)(\/|\?|$)/,
     async (route) => {
       const request = route.request();
       const method = request.method();
       const url = new URL(request.url());
       const path = url.pathname;
       let body = {};
-      if (method === "POST" || method === "PUT") {
+      /* PATCH entra aqui por causa da marcação de situação do evento (US14):
+         sem ele, o corpo chegaria vazio e a situação viria indefinida. */
+      if (method === "POST" || method === "PUT" || method === "PATCH") {
         try {
           body = JSON.parse(request.postData() || "{}");
         } catch {
@@ -335,6 +416,8 @@ export async function setupApiMock(page) {
             redes_sociais: body.redes_sociais || null,
             gestao: body.gestao || null,
           };
+          const ocupante = ocupanteDoCargo(db, body);
+          if (ocupante) return route.fulfill(erroCargoOcupado(ocupante, body));
           db.lideres.push(created);
           return route.fulfill(json(created, 201));
         }
@@ -348,6 +431,10 @@ export async function setupApiMock(page) {
         }
         if (method === "PUT") {
           if (idx === -1) return route.fulfill(notFound());
+          /* A regra vale também na edição — é o caminho que costuma escapar
+             quando a validação entra só no cadastro. */
+          const ocupante = ocupanteDoCargo(db, body, liderId);
+          if (ocupante) return route.fulfill(erroCargoOcupado(ocupante, body));
           db.lideres[idx] = { ...db.lideres[idx], ...body, lider_id: liderId };
           return route.fulfill(json(db.lideres[idx]));
         }
@@ -556,6 +643,26 @@ export async function setupApiMock(page) {
       }
 
       // ---------- EVENTOS ----------
+      /* US14: marca o evento como cancelado ou adiado, ou desfaz a marcação.
+         Nada é apagado — o evento continua na lista, com a situação trocada. */
+      m = path.match(/\/evento\/(\d+)\/situacao$/);
+      if (m && method === "PATCH") {
+        const eventId = Number(m[1]);
+        const idx = db.events.findIndex((e) => e.evento_id === eventId);
+        if (idx === -1) return route.fulfill(notFound());
+        const situacao = body.situacao;
+        if (!["ativo", "cancelado", "adiado"].includes(situacao)) {
+          return route.fulfill(json({ detail: "Situação inválida." }, 422));
+        }
+        db.events[idx] = {
+          ...db.events[idx],
+          situacao,
+          /* A nova data só vale no adiado; nas demais o servidor a zera. */
+          nova_data: situacao === "adiado" ? body.nova_data ?? null : null,
+        };
+        return route.fulfill(json(db.events[idx]));
+      }
+
       if (path.match(/\/evento\/buscar$/)) {
         const termo = (url.searchParams.get("termo") || "").toLowerCase();
         return route.fulfill(
@@ -574,7 +681,13 @@ export async function setupApiMock(page) {
         }
         if (method === "PUT") {
           if (idx === -1) return route.fulfill(notFound());
-          db.events[idx] = { ...db.events[idx], ...body, evento_id: eventId };
+          /* O corpo só sobrescreve o que ele de fato traz: um formulário que
+             não envia `situacao` preserva o adiamento, como faz o back-end
+             com `exclude_unset`. */
+          const enviados = Object.fromEntries(
+            Object.entries(body).filter(([, v]) => v !== undefined)
+          );
+          db.events[idx] = { ...db.events[idx], ...enviados, evento_id: eventId };
           return route.fulfill(json(db.events[idx]));
         }
         if (method === "DELETE") {
@@ -640,6 +753,81 @@ export async function setupApiMock(page) {
           };
           db.products.push(created);
           return route.fulfill(json(created));
+        }
+      }
+
+      // ---------- PAINEL: LINKS FIXADOS (US10) ----------
+      if (path.match(/\/painel\/links$/)) {
+        if (method === "GET") {
+          return route.fulfill(json(db.painelLinks));
+        }
+        if (method === "PUT") {
+          /* Atualização parcial: só os campos enviados mudam, e "" remove o
+             link. É o que permite trocar um sem apagar o outro. */
+          for (const campo of ["link_cadastro_lideres", "link_planilha_lideres"]) {
+            if (!(campo in body)) continue;
+            const valor = String(body[campo] ?? "").trim();
+            if (!valor) {
+              db.painelLinks[campo] = null;
+              continue;
+            }
+            if (!/^https?:\/\//i.test(valor)) {
+              return route.fulfill(
+                json({ detail: [{ msg: "Value error, O link deve começar com https:// ou http://." }] }, 422)
+              );
+            }
+            db.painelLinks[campo] = valor;
+          }
+          return route.fulfill(json(db.painelLinks));
+        }
+      }
+
+      // ---------- MATERIAIS (US11) ----------
+      m = path.match(/\/material\/(\d+)$/);
+      if (m) {
+        const materialId = Number(m[1]);
+        const idx = db.materiais.findIndex((mat) => mat.material_id === materialId);
+        if (method === "GET") {
+          return route.fulfill(idx === -1 ? notFound() : json(db.materiais[idx]));
+        }
+        if (method === "PUT") {
+          if (idx === -1) return route.fulfill(notFound());
+          db.materiais[idx] = {
+            ...db.materiais[idx],
+            ...body,
+            material_id: materialId,
+            url_download: body.link || db.materiais[idx].link,
+          };
+          return route.fulfill(json(db.materiais[idx]));
+        }
+        if (method === "DELETE") {
+          if (idx === -1) return route.fulfill(notFound());
+          db.materiais.splice(idx, 1);
+          return route.fulfill(json({}, 204));
+        }
+      }
+      if (path.match(/\/material\/?$/)) {
+        if (method === "GET") {
+          const tipo = url.searchParams.get("tipo");
+          const lista = tipo ? db.materiais.filter((mat) => mat.tipo === tipo) : db.materiais;
+          return route.fulfill(json(lista));
+        }
+        if (method === "POST") {
+          if (!String(body.titulo ?? "").trim()) {
+            return route.fulfill(json({ detail: [{ msg: "Value error, O título é obrigatório." }] }, 422));
+          }
+          const created = {
+            material_id: db.nextMaterialId++,
+            titulo: body.titulo,
+            descricao: body.descricao ?? null,
+            tipo: body.tipo,
+            link: body.link,
+            url_download: body.link,
+            criado_em: new Date().toISOString(),
+          };
+          /* A lista vem do mais novo para o mais antigo. */
+          db.materiais.unshift(created);
+          return route.fulfill(json(created, 201));
         }
       }
 

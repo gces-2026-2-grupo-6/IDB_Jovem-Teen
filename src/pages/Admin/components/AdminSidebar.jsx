@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, CalendarDays, Users, Mic, ShoppingCart, UsersRound, ShieldCheck, LogOut, X } from "lucide-react";
+import { Home, CalendarDays, Users, Mic, ShoppingCart, UsersRound, ShieldCheck, FolderDown, LogOut, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import usePermissao from "../../../hooks/usePermissao";
 import { SETOR } from "../../../utils/permissoes";
@@ -19,6 +19,14 @@ const sidebarLinks = [
     label: "Diretores & Líderes",
     path: "/admin/lideres",
     icon: UsersRound,
+    setor: null,
+    somenteSuperadmin: true,
+  },
+  /* US11: a cliente definiu que só a superadministradora envia materiais. */
+  {
+    label: "Materiais",
+    path: "/admin/materiais",
+    icon: FolderDown,
     setor: null,
     somenteSuperadmin: true,
   },
