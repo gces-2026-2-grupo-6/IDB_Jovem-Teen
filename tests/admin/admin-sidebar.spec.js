@@ -32,7 +32,11 @@ test.describe('Admin Sidebar e Navegação', () => {
     await expect(sidebar.getByRole('link', { name: /Diretores & Líderes/i })).toBeVisible();
   });
 
-  test('deve realizar logout ao clicar no botão Sair', async ({ page }) => {
+  test('deve realizar logout ao clicar no botão Sair', async ({ page, isMobile }) => {
+    /* Só desktop: o fluxo clica nos itens da barra lateral, que no celular
+       fica recolhida atrás do botão "Abrir menu". O caminho pelo menu móvel
+       é coberto em admin-mobile.spec.js. */
+    test.skip(isMobile, 'barra lateral recolhida no celular');
     const sidebar = page.locator('aside');
     const btnSair = sidebar.getByRole('button', { name: /Sair/i });
 

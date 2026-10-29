@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Building2, Clock } from "lucide-react";
 import { formatEventDates, isMultiDay, toFormResponseUrl, mostrarInscricao } from "../../../services/eventService";
 import EventStatusNotice, { EventStatusBadge } from "../../../components/ui/EventStatusNotice";
+import ModalidadeBadge from "../../../components/ui/ModalidadeBadge";
 
 export default function EventList({ events }) {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ export default function EventList({ events }) {
 
           {/* Info */}
           <div className="p-4">
+            <ModalidadeBadge event={event} className="mb-2" />
             <h3 className="font-semibold text-[#FF6D2C] text-base mb-3">
               {event.title}
             </h3>

@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 import { Mail } from "lucide-react";
 import { FaInstagram, FaFacebookF } from "react-icons/fa6";
+import useInstitucional from "../../../hooks/useInstitucional";
 const logoSvg = "/logo.svg";
 
 export default function Footer() {
+  /* US22: a missão do rodapé é a mesma que a superadministradora edita. */
+  const { conteudo } = useInstitucional();
+
   return (
     <footer id="contato" className="w-full bg-white text-neutral-800 border-t border-neutral-200">
       <div className="w-full max-w-[1400px] mx-auto px-4 py-16 md:px-8">
@@ -49,9 +53,17 @@ export default function Footer() {
               <div className="w-[2px] h-12 bg-neutral-200 rounded-full"></div>
               <img src="/logo_geral.png" alt="Logo IDB Geral" className="h-[60px] w-auto shrink-0 object-contain" />
             </div>
-            <p className="text-neutral-600 text-sm leading-relaxed max-w-[320px] font-bold text-center">
-              Inspirar e capacitar as novas gerações a viverem o propósito cristão com autenticidade, unindo fé, protagonismo e serviço para transformar a sociedade.
-            </p>
+            {conteudo.missao && (
+              <p className="text-neutral-600 text-sm leading-relaxed max-w-[320px] font-bold text-center">
+                {conteudo.missao}
+              </p>
+            )}
+            <Link
+              to="/quem-somos"
+              className="text-sm font-bold text-[#C2410C] hover:text-[#9A3412] underline underline-offset-4"
+            >
+              Missão, visão e valores
+            </Link>
           </div>
           {/* Direita - Botões */}
           <div className="flex flex-col items-start md:items-end gap-6 md:pr-10">

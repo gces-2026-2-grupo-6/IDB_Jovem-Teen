@@ -4,11 +4,14 @@ import { Building2, Clock } from "lucide-react";
 import EventFilters from "./components/EventFilters";
 import EventSearch from "./components/EventSearch";
 import EventList from "./components/EventList";
+import PastEvents from "./components/PastEvents";
 import EmptyEvents from "./components/EmptyEvents";
+import ModalidadeBadge from "../../components/ui/ModalidadeBadge";
 import {
   fetchAllEvents,
   formatDateRange,
   isOngoingOrFuture,
+  isOnlineEvent,
   splitDateTime,
   toFormResponseUrl,
 } from "../../services/eventService";
@@ -80,8 +83,12 @@ function matchesEventFilters(event, filters) {
   const regiaoAtiva =
     filters.regiao === "Região" || inferRegionFromLocation(event.location) === normalizeText(filters.regiao);
   const dataAtiva = matchesDateFilter(event.date, filters.data);
+  const modalidadeAtiva =
+    !filters.modalidade ||
+    filters.modalidade === "Modalidade" ||
+    (filters.modalidade === "Online") === isOnlineEvent(event);
 
-  return tipoAtivo && regiaoAtiva && dataAtiva;
+  return tipoAtivo && regiaoAtiva && dataAtiva && modalidadeAtiva;
 }
 
 /* Fluxo de participante (US09). Sem link cadastrado, leva à página do evento
@@ -115,6 +122,7 @@ export default function Eventos() {
     tipo: "Tipo de evento",
     regiao: "Região",
     data: "Data",
+    modalidade: "Modalidade",
   });
 
   const [allEvents, setAllEvents] = useState([]);
@@ -164,8 +172,13 @@ export default function Eventos() {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const featured = upcoming[0] || null;
 
-  /* Grid "Todos os eventos" também esconde os já encerrados e aplica os filtros selecionados */
-  const visibleResults = results.filter((event) => matchesEventFilters(event, filters));
+  /* Grid "Todos os eventos" também esconde os já encerrados e aplica os
+     filtros selecionados. A ordem é a cronológica, e não a de cadastro que a
+     API devolve: é ela que o selo e o filtro de modalidade preservam (US19,
+     CA5), no lugar de duas seções separadas. */
+  const visibleResults = results
+    .filter((event) => matchesEventFilters(event, filters))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
     <main className="min-h-screen bg-[#FDF3EA] pt-[70px] md:pt-[82px]">
@@ -210,6 +223,7 @@ export default function Eventos() {
               {/* Info sobre a imagem */}
               <div className="p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
                 <div>
+                  <ModalidadeBadge event={featured} className="mb-2" />
                   <h3 className="font-bold text-[#FF6D2C] text-2xl leading-tight">
                     {featured.title}
                   </h3>
@@ -271,6 +285,10 @@ export default function Eventos() {
           )}
         </div>
       </section>
+
+      {/* Histórico (US15): o que já aconteceu vem depois da agenda, e a seção
+          se esconde sozinha quando não há evento encerrado. */}
+      <PastEvents />
     </main>
   );
 }

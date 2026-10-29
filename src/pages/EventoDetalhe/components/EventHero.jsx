@@ -1,13 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Clock, CalendarDays, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Building2, Clock, CalendarDays, CalendarPlus, Globe, Video } from "lucide-react";
 import {
   buildGoogleCalendarUrl,
   formatEventDates,
   formatEventTimeLabel,
+  isOnlineEvent,
   toFormResponseUrl,
   mostrarInscricao,
 } from "../../../services/eventService";
 import EventStatusNotice from "../../../components/ui/EventStatusNotice";
+import ModalidadeBadge from "../../../components/ui/ModalidadeBadge";
 
 function abrirFormulario(link) {
   window.open(toFormResponseUrl(link), "_blank", "noopener,noreferrer");
@@ -19,6 +21,7 @@ export default function EventHero({ event }) {
 
   const dateRange = formatEventDates(event);
   const timeLabel = formatEventTimeLabel(event);
+  const online = isOnlineEvent(event);
 
   return (
     <section className="w-full bg-[#FDF3EA]">
@@ -34,6 +37,8 @@ export default function EventHero({ event }) {
             >
               <ArrowLeft size={22} className="text-[#1E1E1E]" />
             </button>
+
+            <ModalidadeBadge event={event} className="self-start" />
 
             {/* Título com badge laranja */}
             <h1>
@@ -54,8 +59,13 @@ export default function EventHero({ event }) {
 
             {/* Local, data e horário */}
             <div className="flex flex-col gap-2 mt-1">
+              {/* US19: o evento online não tem endereço nem mapa. */}
               <span className="flex items-center gap-2 text-[#1E1E1E]/70 text-sm">
-                <Building2 size={16} className="text-[#1E1E1E]/50" />
+                {online ? (
+                  <Globe size={16} className="text-[#1E1E1E]/50" />
+                ) : (
+                  <Building2 size={16} className="text-[#1E1E1E]/50" />
+                )}
                 {event.location}
               </span>
               {dateRange && (
@@ -71,6 +81,19 @@ export default function EventHero({ event }) {
                 </span>
               )}
             </div>
+
+            {/* Link da transmissão do evento online, quando já cadastrado */}
+            {online && event.linkTransmissao && (
+              <a
+                href={event.linkTransmissao}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 self-start text-sm font-bold text-white bg-[#3730A3] hover:bg-[#312E81] px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+              >
+                <Video size={18} />
+                Assistir à transmissão
+              </a>
+            )}
 
             {/* Adicionar ao Google Calendar do usuário */}
             {googleCalendarUrl && (

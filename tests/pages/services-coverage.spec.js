@@ -18,7 +18,7 @@ const error401 = () => json({ detail: 'Não autorizado' }, 401);
 const error403 = () => json({ detail: 'Proibido' }, 403);
 
 
-test.describe('eventService.js – branches de erro', () => {
+test.describe('eventService.js – branches de erro', { tag: '@fonte' }, () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -27,11 +27,10 @@ test.describe('eventService.js – branches de erro', () => {
   test('handleUpdateEvent – sem tipoEvento válido retorna erro (linha 358-365)', async ({ page }) => {
     await page.goto('/admin/eventos/1/editar');
 
-    let alertMessage = '';
-    page.on('dialog', async dialog => {
-      alertMessage = dialog.message();
-      await dialog.accept();
-    });
+    /* O formulario carrega o evento antes de renderizar o select. Sem esperar
+       por ele, o page.evaluate abaixo nao achava nada, o campo seguia valido e
+       o alerta nunca era disparado. */
+    await page.waitForSelector('select[name="tipoEvento"]');
 
     await page.evaluate(() => {
       const sel = document.querySelector('select[name="tipoEvento"]');
@@ -45,10 +44,23 @@ test.describe('eventService.js – branches de erro', () => {
       document.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
     });
 
-    await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.waitForTimeout(600);
+    /* Espera pelo evento, nao por um tempo fixo: com 600ms a assercao corria
+       antes do alerta em maquina carregada, e o teste ficava instavel.
 
-    expect(alertMessage.length).toBeGreaterThan(0);
+       O handler precisa aceitar o dialogo *durante* o clique. `alert()` bloqueia
+       a pagina, entao esperar o clique terminar para so depois aceitar travaria
+       os dois. */
+    const alerta = new Promise((resolve) => {
+      page.once('dialog', async (dialogo) => {
+        const mensagem = dialogo.message();
+        await dialogo.accept();
+        resolve(mensagem);
+      });
+    });
+
+    await page.getByRole('button', { name: 'Salvar' }).click();
+
+    expect((await alerta).length).toBeGreaterThan(0);
   });
 
   test('handleUpdateEvent – API retorna erro 500 (linha 364-365)', async ({ page }) => {
@@ -411,7 +423,7 @@ test.describe('eventService.js – branches de erro', () => {
   });
 });
 
-test.describe('liderService.js – catch blocks', () => {
+test.describe('liderService.js – catch blocks', { tag: '@fonte' }, () => {
   test('getAllLideres – catch quando API falha (linha 9-10)', async ({ page }) => {
     await setupApiMock(page);
     await page.route(/\/lider\/?$/, (route) => route.abort('failed'));
@@ -486,7 +498,7 @@ test.describe('liderService.js – catch blocks', () => {
   });
 });
 
-test.describe('liderService.js – exercício direto via page.evaluate', () => {
+test.describe('liderService.js – exercício direto via page.evaluate', { tag: '@fonte' }, () => {
   test('exercita todos os métodos do LiderService via window.__coverage__', async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -509,7 +521,7 @@ test.describe('liderService.js – exercício direto via page.evaluate', () => {
   });
 });
 
-test.describe('mapaService.js – branches não cobertos', () => {
+test.describe('mapaService.js – branches não cobertos', { tag: '@fonte' }, () => {
   test('fetchEndereco – retorna null quando nome_local está ausente (linha 11)', async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -568,7 +580,7 @@ test.describe('mapaService.js – branches não cobertos', () => {
   });
 });
 
-test.describe('productService.js – branches de erro', () => {
+test.describe('productService.js – branches de erro', { tag: '@fonte' }, () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -774,7 +786,7 @@ test.describe('productService.js – branches de erro', () => {
    As mesmas ramificações continuam cobertas, agora chamando o serviço
    diretamente, como já se faz no bloco do liderService acima. O comportamento
    novo de vínculo é coberto em tests/admin/convidados.spec.js. */
-test.describe('speakerService.js – branches de erro', () => {
+test.describe('speakerService.js – branches de erro', { tag: '@fonte' }, () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -884,7 +896,7 @@ test.describe('speakerService.js – branches de erro', () => {
 });
 
 /* Exclusão de convidado segue a regra da US03: só o superadministrador. */
-test.describe('speakerService.js – exclusão restrita', () => {
+test.describe('speakerService.js – exclusão restrita', { tag: '@fonte' }, () => {
   test('handleDeleteSpeaker recusa administrador de setor antes de chamar a API', async ({ page }) => {
     await loginComPapeis(page, ['admin', 'admin-eventos']);
     await setupApiMock(page);
@@ -907,7 +919,7 @@ test.describe('speakerService.js – exclusão restrita', () => {
   });
 });
 
-test.describe('volunteerService.js – branches de erro', () => {
+test.describe('volunteerService.js – branches de erro', { tag: '@fonte' }, () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
@@ -1038,7 +1050,7 @@ test.describe('volunteerService.js – branches de erro', () => {
   });
 });
 
-test.describe('Cobertura extra de services via page.evaluate no TestCoverage', () => {
+test.describe('Cobertura extra de services via page.evaluate no TestCoverage', { tag: '@fonte' }, () => {
   test('cobre os branches de fallback e null values diretamente', async ({ page }) => {
     await setupApiMock(page);
 
@@ -1092,7 +1104,7 @@ test.describe('Cobertura extra de services via page.evaluate no TestCoverage', (
   });
 });
 
-test.describe('Cobertura extra de serviços em TestCoverage', () => {
+test.describe('Cobertura extra de serviços em TestCoverage', { tag: '@fonte' }, () => {
   test('exercita branches de nulo e erro via TestCoverage', async ({ page }) => {
     await setupApiMock(page);
     await page.route(/\/mapa\/endereco/, (route) => route.abort('failed'));

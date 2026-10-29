@@ -215,7 +215,11 @@ test.describe('Admin - Gerenciamento de Eventos CRUD', () => {
     await expect(page).toHaveURL(/\/admin\/eventos/);
   });
 
-  test('deve testar link Voluntários em Evento Anterior', async ({ page }) => {
+  test('deve testar link Voluntários em Evento Anterior', async ({ page, isMobile }) => {
+    /* Só desktop: o fluxo clica nos itens da barra lateral, que no celular
+       fica recolhida atrás do botão "Abrir menu". O caminho pelo menu móvel
+       é coberto em admin-mobile.spec.js. */
+    test.skip(isMobile, 'barra lateral recolhida no celular');
     const btnVol = page.getByRole('link', { name: 'Voluntários', exact: true }).first();
     await btnVol.click();
 
@@ -347,7 +351,7 @@ test.describe('Admin - Cobertura Extra de Branches', () => {
 
     await page.getByRole('button', { name: 'Salvar' }).click();
     await page.waitForTimeout(500);
-    expect(alertMessage).toContain('Latitude e longitude');
+    expect(alertMessage).toContain('Escolha o local do evento no mapa');
   });
 
   test('deve exibir alert ao editar evento limpando o título (Edit.jsx L32)', async ({ page }) => {

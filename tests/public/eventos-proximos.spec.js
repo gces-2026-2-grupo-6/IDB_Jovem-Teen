@@ -13,6 +13,27 @@ test.describe('Página Eventos Próximos', () => {
   });
 
   test('deve possuir um mapa (Leaflet) carregado', async ({ page }) => {
+    /* A página só troca "Obtendo sua localização..." pelo mapa quando a
+       geolocalização responde. Sem permissão concedida, quem responde é o
+       `timeout: 10000` do useGeolocation, e o teste passava a depender de uma
+       corrida: 10s de espera do navegador contra 15s de orçamento da asserção.
+       Em máquina carregada, ou com os dois servidores de pé e um worker só, a
+       corrida se perde. Mocando a localização como o teste dos marcadores já
+       faz, o mapa aparece de imediato e o que se verifica continua sendo o
+       mesmo: que o container do Leaflet é renderizado. */
+    await page.addInitScript(() => {
+      navigator.geolocation.getCurrentPosition = (success) => {
+        success({ coords: { latitude: -8.05, longitude: -34.9 } });
+      };
+      navigator.geolocation.watchPosition = (success) => {
+        success({ coords: { latitude: -8.05, longitude: -34.9 } });
+        return 1;
+      };
+    });
+
+    /* O beforeEach já navegou; o initScript vale da próxima navegação em diante. */
+    await page.goto('/eventos-proximos');
+
     // O mapa agora é renderizado com Leaflet (não mais um iframe do Google)
     const mapa = page.locator('.leaflet-container');
     await expect(mapa).toBeVisible({ timeout: 15000 });
@@ -54,9 +75,10 @@ test.describe('Página Eventos Próximos', () => {
     const fallbackMsg = page.getByText(/User denied Geolocation|Permissão de localização negada|Mostrando todos os eventos por data/i);
     await expect(fallbackMsg.first()).toBeVisible();
 
-    // A lista de eventos deve aparecer
+    // A lista de eventos deve aparecer. A asserção espera a lista: contar
+    // uma vez só corria contra a carga dos eventos e falhava no WebKit.
     const list = page.locator('a[href^="/eventos/"]');
-    await expect(await list.count()).toBeGreaterThan(0);
+    await expect(list.first()).toBeVisible();
   });
 
   test('deve interagir com os marcadores do mapa (abrir e fechar)', async ({ page }) => {
@@ -83,11 +105,14 @@ test.describe('Página Eventos Próximos', () => {
     await expect(marcadores).toHaveCount(3);
     const marcadorEvento = marcadores.nth(1);
     await marcadorEvento.waitFor({ state: 'visible' });
-    await marcadorEvento.click({ force: true });
-
-    // O popup (com botão 'Ver evento') deve aparecer
+    // O popup (com botão 'Ver evento') deve aparecer. O clique se repete: no
+    // WebKit o primeiro toque às vezes chega antes do mapa assentar e o
+    // Leaflet o descarta.
     const popup = page.locator('.leaflet-popup');
-    await expect(popup).toBeVisible();
+    await expect(async () => {
+      await marcadorEvento.click({ force: true });
+      await expect(popup).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(popup.getByRole('link', { name: /Ver evento/i })).toBeVisible();
 
     // Testa fechar o popup

@@ -33,7 +33,14 @@ test.describe('US09 - Painel: dois fluxos de inscrição por evento', () => {
     await expect(page.getByText('Retiro de Verão')).toBeVisible();
   });
 
-  test('a listagem de voluntários mantém o status pendente/aprovado/reprovado', async ({ page }) => {
+  test('a listagem de voluntários mantém o status pendente/aprovado/reprovado', async ({ page }, testInfo) => {
+    /* DEFEITO CONHECIDO (Pixel 7): o menu do status abre com posição fixa
+       logo abaixo do botão e, com a linha perto do fim da tela, as opções
+       ficam fora da área visível. O clique às vezes acerta e às vezes não,
+       conforme a rolagem reposiciona o menu, então o teste fica suspenso
+       neste aparelho. O defeito é verificado de forma determinística em
+       admin-mobile.spec.js; retirar esta linha quando for corrigido. */
+    test.fixme(testInfo.project.name === 'mobile-android', 'opções do status fora da tela');
     await expect(page.getByText('Maria Silva')).toBeVisible();
     await expect(page.getByText('Status', { exact: true })).toBeVisible();
 

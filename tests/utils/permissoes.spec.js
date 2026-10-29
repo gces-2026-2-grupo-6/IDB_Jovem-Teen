@@ -141,14 +141,17 @@ test.describe('acesso parcial', () => {
 });
 
 test.describe('rota inicial do painel', () => {
-  test('quem administra eventos ou produtos começa no painel', () => {
+  test('quem administra eventos começa no painel', () => {
     expect(rotaInicialDoPainel(SUPERADMIN)).toBe('/admin');
     expect(rotaInicialDoPainel(ADMIN_EVENTOS)).toBe('/admin');
-    expect(rotaInicialDoPainel(ADMIN_PRODUTOS)).toBe('/admin');
+  });
+
+  test('quem só cuida da loja vai direto para a tela de produtos (US03, CA1)', () => {
+    /* O painel inicial resume só a agenda; para essa pessoa ele estaria vazio. */
+    expect(rotaInicialDoPainel(ADMIN_PRODUTOS)).toBe(ROTA_DO_SETOR[SETOR.PRODUTOS]);
   });
 
   test('quem só cuida de inscrições vai direto para a sua tela', () => {
-    /* O painel resume eventos e produtos; para essa pessoa ele estaria vazio. */
     expect(rotaInicialDoPainel(ADMIN_INSCRICOES)).toBe(ROTA_DO_SETOR[SETOR.INSCRICOES]);
   });
 

@@ -72,9 +72,23 @@ export function buildGoogleCalendarUrl(event) {
     text: event.title || "Evento",
     dates: `${start}/${end}`,
     details: event.description || "",
-    location: event.location || "",
+    /* No evento online, quem salva na agenda leva o link da transmissão. */
+    location: isOnlineEvent(event) ? event.linkTransmissao || LOCAL_EVENTO_ONLINE : event.location || "",
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/* US19: o evento é online ou presencial. O online não tem endereço e guarda
+   o link da transmissão; eventos antigos, sem o campo, são presenciais. */
+export const MODALIDADES_EVENTO = ["presencial", "online"];
+export const LOCAL_EVENTO_ONLINE = "Evento online";
+
+export function isOnlineEvent(event) {
+  return event?.modalidade === "online";
+}
+
+export function isValidHttpUrl(value) {
+  return /^https?:\/\/\S+$/i.test(String(value || "").trim());
 }
 
 export function toFormResponseUrl(url) {
@@ -126,6 +140,7 @@ export function avisoDeSituacao(event) {
 
 function adaptEvent(apiEvent) {
   if (!apiEvent) return null;
+  const modalidade = apiEvent.modalidade === "online" ? "online" : "presencial";
   return {
     id: apiEvent.evento_id,
     title: apiEvent.nome,
@@ -138,7 +153,13 @@ function adaptEvent(apiEvent) {
        isolado aqui: se o back-end fechar com outro nome, só esta linha muda. */
     days: normalizeEventDays(apiEvent.datas),
     time: formatTimeRange(apiEvent.data_inicio, apiEvent.data_fim),
-    location: apiEvent.nome_local || "",
+    /* `location` é o texto exibido nas telas; no online ele diz que o evento
+       é online, para nenhum card ficar com o local em branco. O endereço de
+       verdade fica em `address`, que o formulário usa no mapa. */
+    modalidade,
+    location: modalidade === "online" ? LOCAL_EVENTO_ONLINE : apiEvent.nome_local || "",
+    address: apiEvent.nome_local || "",
+    linkTransmissao: apiEvent.link_transmissao || "",
     latitude: apiEvent.local_latitude,
     longitude: apiEvent.local_longitude,
     linkGaleria: apiEvent.link_galeria || "",
@@ -173,12 +194,16 @@ function adaptEvent(apiEvent) {
 function toApiEvent(form) {
   const toIso = (v) => (v ? `${v}:00`.slice(0, 19) : null);
   const dias = normalizeEventDays(form.days);
+  const online = form.modalidade === "online";
   return {
     nome: form.title,
     tipo_evento: form.tipoEvento || null,
     descricao: form.description || null,
-    local_latitude: Number(form.latitude),
-    local_longitude: Number(form.longitude),
+    /* US19: o online não tem endereço; o presencial continua igual. */
+    modalidade: online ? "online" : "presencial",
+    link_transmissao: online ? (form.linkTransmissao || "").trim() || null : null,
+    local_latitude: online ? null : Number(form.latitude),
+    local_longitude: online ? null : Number(form.longitude),
     data_inicio: toIso(form.date),
     data_fim: toIso(form.endDate),
     /* `datas` só vai preenchido quando o evento tem dias específicos. Um
@@ -365,6 +390,22 @@ function validateEventDates(data) {
   return null;
 }
 
+/* US19: no presencial o endereço é obrigatório; no online, o link é
+   opcional, mas, se vier, precisa ser um endereço da web. */
+function validateEventLocation(data) {
+  if (data.modalidade === "online") {
+    const link = (data.linkTransmissao || "").trim();
+    if (link && !isValidHttpUrl(link)) {
+      return "O link da transmissão precisa começar com https:// ou http://.";
+    }
+    return null;
+  }
+  if (data.latitude === "" || data.longitude === "" || data.latitude == null || data.longitude == null) {
+    return "Escolha o local do evento no mapa. Se o evento for online, marque a opção Online.";
+  }
+  return null;
+}
+
 export async function handleCreateEvent(data) {
   if (!data.title || !data.title.trim()) {
     return { success: false, error: "Nome do evento é obrigatório." };
@@ -376,8 +417,9 @@ export async function handleCreateEvent(data) {
   if (erroDeData) {
     return { success: false, error: erroDeData };
   }
-  if (data.latitude === "" || data.longitude === "" || data.latitude == null || data.longitude == null) {
-    return { success: false, error: "Latitude e longitude são obrigatórias." };
+  const erroDeLocal = validateEventLocation(data);
+  if (erroDeLocal) {
+    return { success: false, error: erroDeLocal };
   }
   try {
     const { data: created } = await api.post("/evento/", toApiEvent(data));
@@ -399,6 +441,10 @@ export async function handleUpdateEvent(slugOrId, data) {
   const erroDeData = validateEventDates(data);
   if (erroDeData) {
     return { success: false, error: erroDeData };
+  }
+  const erroDeLocal = validateEventLocation(data);
+  if (erroDeLocal) {
+    return { success: false, error: erroDeLocal };
   }
   const id = parseEventId(slugOrId);
   try {
@@ -445,6 +491,25 @@ export async function handleAlterarSituacaoEvento(slugOrId, situacao, novaData =
   }
 }
 
+/* US20 (A1): o que será apagado junto com o evento, para a confirmação.
+   Devolve `null` se a contagem não puder ser lida — o modal avisa e a
+   exclusão continua possível. */
+export async function fetchDeletionSummary(slugOrId) {
+  const id = parseEventId(slugOrId);
+  if (!id) return null;
+  try {
+    const { data } = await api.get(`/evento/${id}/exclusao`);
+    return {
+      participantes: Number(data?.participantes) || 0,
+      voluntarios: Number(data?.voluntarios) || 0,
+      atividades: Number(data?.atividades) || 0,
+      convidados: Number(data?.convidados) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function handleDeleteEvent(slugOrId) {
   if (!podeExcluirAgora()) {
     return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
@@ -480,6 +545,78 @@ export async function fetchEventGallery(eventId) {
   } catch {
     return [];
   }
+}
+
+/* US18 — álbum do evento no painel. Diferente de `fetchEventGallery`, que
+   devolve lista vazia em qualquer falha (no site, "sem fotos" basta), aqui o
+   erro sobe: a administradora precisa saber se o álbum está vazio ou se a
+   leitura falhou. */
+export async function fetchAlbumDoEvento(eventId) {
+  const id = parseEventId(eventId);
+  const { data } = await api.get(`/evento/${id}/galeria`);
+  return data.map((foto) => ({
+    id: foto.id,
+    nome: foto.nome,
+    url: foto.url_visualizacao,
+  }));
+}
+
+/* US18 — exclui fotos do álbum só no site (CA6): o servidor guarda os ids e
+   deixa de listá-las em toda galeria; o arquivo no Drive não é alterado.
+
+   Contrato esperado do back-end (a cargo do trio de back-end):
+     POST /evento/{id}/galeria/excluidas   só superadmin
+       <- { "fotos": ["<id do arquivo no Drive>", ...] }   -> 204 */
+export async function excluirFotosDoAlbum(eventId, fotoIds) {
+  if (!podeExcluirAgora()) {
+    return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+  }
+  if (!Array.isArray(fotoIds) || fotoIds.length === 0) {
+    return { success: false, error: "Selecione ao menos uma foto." };
+  }
+  const id = parseEventId(eventId);
+  try {
+    await api.post(`/evento/${id}/galeria/excluidas`, { fotos: fotoIds });
+    return { success: true, error: null };
+  } catch (error) {
+    const status = error?.response?.status;
+    if (status === 404) {
+      return { success: false, error: "O servidor ainda não oferece a exclusão de fotos." };
+    }
+    if (status === 403) {
+      return { success: false, error: ERRO_SEM_PERMISSAO_PARA_EXCLUIR };
+    }
+    return { success: false, error: getErrorMessage(error, "Não foi possível excluir as fotos.") };
+  }
+}
+
+/* Histórico de eventos (US15): os que já terminaram, do mais recente para o
+   mais antigo, cada um com a capa e a contagem de fotos do seu álbum.
+
+   Até aqui um evento encerrado sumia do site público — a agenda, o mapa e a
+   home filtram todos por `isOngoingOrFuture`. As fotos existiam na galeria,
+   mas soltas do evento que as originou.
+
+   A capa é a primeira foto do álbum; sem álbum, cai na imagem do evento, a
+   mesma que a agenda já usa. Só busca a galeria de quem tem `linkGaleria`,
+   para não disparar uma chamada por evento sem necessidade. */
+export async function fetchPastEventsWithPhotos() {
+  const events = await fetchAllEvents();
+  const passados = events
+    .filter((e) => getEventStatus(e) === "past")
+    .sort((a, b) => dateSortKey(b.endDate || b.date) - dateSortKey(a.endDate || a.date));
+
+  return Promise.all(
+    passados.map(async (ev) => {
+      const fotos = ev.linkGaleria ? await fetchEventGallery(ev.id) : [];
+      return {
+        ...ev,
+        fotos,
+        cover: fotos[0]?.url || ev.image,
+        totalFotos: fotos.length,
+      };
+    })
+  );
 }
 
 export async function fetchAggregatedGallery() {
