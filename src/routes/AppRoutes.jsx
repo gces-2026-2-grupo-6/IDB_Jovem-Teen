@@ -14,6 +14,7 @@ import Eventos from "../pages/Eventos";
 import EventosProximos from "../pages/EventosProximos";
 import EventoDetalhe from "../pages/EventoDetalhe";
 import Galeria from "../pages/Galeria";
+import Materiais from "../pages/Materiais";
 import QuemSomos from "../pages/QuemSomos";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
@@ -37,6 +38,9 @@ import AdminVoluntarioDetails from "../pages/Admin/Voluntarios/Details";
 import AdminAdministradores from "../pages/Admin/Administradores";
 import AdminAdministradorCreate from "../pages/Admin/Administradores/Create";
 import AdminLideres from "../pages/Admin/Lideres";
+import AdminMateriais from "../pages/Admin/Materiais";
+import AdminMaterialCreate from "../pages/Admin/Materiais/Create";
+import AdminMaterialEdit from "../pages/Admin/Materiais/Edit";
 import AdminLiderCreate from "../pages/Admin/Lideres/Create";
 import AdminLiderEdit from "../pages/Admin/Lideres/Edit";
 import AdminInstitucional from "../pages/Admin/Institucional";
@@ -88,6 +92,13 @@ export default function AppRoutes() {
             <Route path="/admin/lideres" element={<AdminLideres />} />
             <Route path="/admin/lideres/criar" element={<AdminLiderCreate />} />
             <Route path="/admin/lideres/:id/editar" element={<AdminLiderEdit />} />
+
+            {/* Materiais para download (US11): a cliente definiu que só a
+                superadministradora envia, edita e exclui. A área pública,
+                abaixo, não passa por aqui — ela não exige login. */}
+            <Route path="/admin/materiais" element={<AdminMateriais />} />
+            <Route path="/admin/materiais/criar" element={<AdminMaterialCreate />} />
+            <Route path="/admin/materiais/:id/editar" element={<AdminMaterialEdit />} />
             {/* US22: missão, visão e valores ficam com o conteúdo institucional. */}
             <Route path="/admin/institucional" element={<AdminInstitucional />} />
           </Route>
@@ -100,6 +111,8 @@ export default function AppRoutes() {
         <Route path="/eventos-proximos" element={<EventosProximos />} />
         <Route path="/eventos/:slug" element={<EventoDetalhe />} />
         <Route path="/galeria" element={<Galeria />} />
+        {/* Aberta a visitante sem login (US11, CA3). */}
+        <Route path="/materiais" element={<Materiais />} />
         <Route path="/quem-somos" element={<QuemSomos />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/test-coverage" element={<TestCoverage />} />

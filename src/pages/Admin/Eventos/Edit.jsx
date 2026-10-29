@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { fetchEventById, handleUpdateEvent } from "../../../services/eventService";
 import EventForm from "../../../components/forms/EventForm";
+import SituacaoEventoCard from "./components/SituacaoEventoCard";
 
 export default function AdminEventoEdit() {
   const navigate = useNavigate();
@@ -72,6 +73,11 @@ export default function AdminEventoEdit() {
           <ChevronLeft size={22} className="text-white" />
         </button>
       </div>
+
+      {/* Situação (US14) — antes do formulário, porque marcar um evento como
+          cancelado costuma ser a razão de abrir esta tela, e porque é uma ação
+          isolada: salva sozinha, sem passar pelo formulário. */}
+      <SituacaoEventoCard event={event} onChange={setEvent} />
 
       {/* Formulário pré-preenchido */}
       <EventForm initialData={event} onSubmit={handleSubmit} eventId={id} />

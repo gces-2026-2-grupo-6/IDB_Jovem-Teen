@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import SectionTitle from "../../../components/ui/SectionTitle";
 import { MapPin } from "lucide-react";
 import CalendarMini from "./components/CalendarMini";
+import LinksLideresCard from "./components/LinksLideresCard";
 import EmptyState from "../../../components/ui/EmptyState";
 import { fetchAllEvents, getEventStatus, extractDayMonth } from "../../../services/eventService";
 import usePermissao from "../../../hooks/usePermissao";
@@ -133,8 +134,14 @@ export default function AdminDashboard() {
 
       {error && <EmptyState message={error} className="border-red-100 bg-red-50/60 text-red-700" />}
 
+      {/* US10 — os dois links fixados. O componente não renderiza nada para
+          quem não é superadministradora, então não há condição a repetir
+          aqui. */}
+      <LinksLideresCard />
+
       {/* Quem não administra eventos não tem o que ver aqui — o painel inicial
-          resume a agenda. */}
+          resume a agenda. A superadministradora nunca cai neste caso, porque
+          administra todos os setores. */}
       {!veEventos && (
         <EmptyState message="Use o menu ao lado para acessar os setores que você administra." />
       )}

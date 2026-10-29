@@ -25,6 +25,7 @@ export function parseEventId(slugOrId) {
 
 import {
   dateSortKey,
+  formatDate,
   normalizeEventDays,
   formatTime,
   formatTimeRange,
@@ -99,6 +100,44 @@ export function toFormResponseUrl(url) {
   return result;
 }
 
+/* Situação do evento (US14).
+
+   O evento cancelado ou adiado **continua aparecendo** no site: nada é
+   apagado, e esconder o evento tiraria do visitante justamente o aviso que a
+   história quer dar. O que muda é que o aviso aparece e a inscrição some. */
+export const SITUACAO = {
+  ATIVO: "ativo",
+  CANCELADO: "cancelado",
+  ADIADO: "adiado",
+};
+
+export function eventoCancelado(event) {
+  return event?.situacao === SITUACAO.CANCELADO;
+}
+
+export function eventoAdiado(event) {
+  return event?.situacao === SITUACAO.ADIADO;
+}
+
+/* CA4: os botões de inscrição ficam ocultos enquanto durar a situação. Só o
+   evento ativo os mostra — qualquer valor inesperado vindo da API é tratado
+   como "não ativo", porque prometer inscrição em evento cancelado é pior que
+   escondê-la à toa. */
+export function mostrarInscricao(event) {
+  return event?.situacao === SITUACAO.ATIVO;
+}
+
+/* Texto do aviso exibido na agenda, no calendário, na home e na página do
+   evento (CA2). Devolve null quando o evento está ativo e não há o que avisar. */
+export function avisoDeSituacao(event) {
+  if (eventoCancelado(event)) return "Evento cancelado";
+  if (eventoAdiado(event)) {
+    const nova = formatDate(event?.novaData);
+    return nova ? `Adiado para ${nova}` : "Evento adiado — nova data em breve";
+  }
+  return null;
+}
+
 function adaptEvent(apiEvent) {
   if (!apiEvent) return null;
   const modalidade = apiEvent.modalidade === "online" ? "online" : "presencial";
@@ -129,6 +168,13 @@ function adaptEvent(apiEvent) {
        em `toApiEvent`. */
     linkFormularioParticipantes: apiEvent.formulario_participante_link || "",
     linkFormularioVoluntarios: apiEvent.formulario_link || "",
+    /* Situação do evento (US14): "ativo", "cancelado" ou "adiado". O
+       back-end sempre envia o campo, e evento antigo chega como "ativo" —
+       mas o `||` cobre uma resposta antiga em cache, para que a ausência do
+       campo nunca esconda os botões de inscrição. */
+    situacao: apiEvent.situacao || SITUACAO.ATIVO,
+    /* Só existe no adiado, e só depois que a nova data é definida. */
+    novaData: apiEvent.nova_data || null,
     calendarioEventoId: apiEvent.calendario_evento_id || null,
     tipoEvento: apiEvent.tipo_evento || "",
     linkImagem: apiEvent.link_imagem || "",
@@ -411,6 +457,40 @@ export async function handleUpdateEvent(slugOrId, data) {
   }
 }
 
+/* Marca o evento como cancelado ou adiado, ou desfaz a marcação (US14).
+
+   O corpo é pequeno de propósito: não é preciso reenviar o evento inteiro, e
+   por isso marcar não corre o risco de sobrescrever um campo que outra pessoa
+   acabou de editar. Voltar para "ativo" desfaz a marcação; `nova_data` só vale
+   no adiado, e o servidor a zera nas demais situações. */
+export async function handleAlterarSituacaoEvento(slugOrId, situacao, novaData = null) {
+  if (!Object.values(SITUACAO).includes(situacao)) {
+    return { success: false, error: "Situação inválida." };
+  }
+
+  const id = parseEventId(slugOrId);
+  const toIso = (v) => (v ? `${v}:00`.slice(0, 19) : null);
+
+  try {
+    const { data } = await api.patch(`/evento/${id}/situacao`, {
+      situacao,
+      nova_data: situacao === SITUACAO.ADIADO ? toIso(novaData) : null,
+    });
+    return { success: true, event: adaptEvent(data), error: null };
+  } catch (error) {
+    if (error?.response?.status === 403) {
+      return {
+        success: false,
+        error: "Apenas o setor de eventos ou a superadministradora podem alterar a situação do evento.",
+      };
+    }
+    return {
+      success: false,
+      error: getErrorMessage(error, "Não foi possível alterar a situação do evento."),
+    };
+  }
+}
+
 /* US20 (A1): o que será apagado junto com o evento, para a confirmação.
    Devolve `null` se a contagem não puder ser lida — o modal avisa e a
    exclusão continua possível. */
@@ -458,6 +538,9 @@ export async function fetchEventGallery(eventId) {
       id: foto.id,
       nome: foto.nome,
       url: foto.url_visualizacao,
+      /* Pronto pelo back-end (US11): o botão "Baixar" só o coloca no href,
+         e o arquivo sai com o nome original, sem pedir login. */
+      downloadUrl: foto.url_download || "",
     }));
   } catch {
     return [];
@@ -545,6 +628,8 @@ export async function fetchAggregatedGallery() {
       return fotos.map((foto) => ({
         id: foto.id,
         image: foto.url,
+        downloadUrl: foto.downloadUrl,
+        nome: foto.nome,
         event: ev.title,
         location: ev.location || "",
       }));

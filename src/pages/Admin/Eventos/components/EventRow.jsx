@@ -6,6 +6,7 @@ import {
   isNonConsecutive,
   eventDayKeys,
 } from "../../../../services/eventService";
+import { EventStatusBadge } from "../../../../components/ui/EventStatusNotice";
 
 /* Caixa de data da linha. Evento de um dia mantém dia grande + mês; evento de
    vários dias mostra a faixa, e quando ela atravessa a virada do mês os dois
@@ -71,7 +72,12 @@ export function UpcomingEventRow({ event, onEdit, onDelete }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-[#1E1E1E] truncate">{event.title}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="font-semibold text-sm text-[#1E1E1E] truncate">{event.title}</p>
+          {/* A administradora precisa ver de relance o que já está marcado,
+              sem abrir cada evento (US14). */}
+          <EventStatusBadge event={event} className="shrink-0" />
+        </div>
         <span className="flex items-center gap-1 text-xs text-[#1E1E1E]/50 mt-0.5">
           <MapPin size={11} />
           {event.location}
