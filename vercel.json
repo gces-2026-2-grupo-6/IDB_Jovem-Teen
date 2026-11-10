@@ -1,4 +1,4 @@
-//{
+{
   //"git": {
     //"deploymentEnabled": false
   //},
@@ -8,4 +8,4 @@
       "destination": "/index.html"
     }
   ]
-//}
+}
