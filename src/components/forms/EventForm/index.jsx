@@ -508,6 +508,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         {/* Palestrantes/convidados — selecionados via ConvidadosPicker */}
         <ConvidadosPicker
           eventId={eventId}
+          /* US13: numa duplicação não há `eventId` ainda, mas os convidados do
+             evento de origem servem de ponto de partida. */
+          preCarregarDe={initialData.copiarConvidadosDe}
           selecionados={convidadosIds ?? []}
           onChange={setConvidadosIds}
         />

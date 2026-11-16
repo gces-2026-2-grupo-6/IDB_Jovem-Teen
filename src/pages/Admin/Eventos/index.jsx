@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
-import { getGroupedEvents, handleDeleteEvent } from "../../../services/eventService";
+import { getGroupedEvents, handleDeleteEvent, duplicarEvento } from "../../../services/eventService";
 import usePermissao from "../../../hooks/usePermissao";
 import useModal from "../../../hooks/useModal";
 import SectionTitle from "../../../components/ui/SectionTitle";
@@ -38,6 +38,13 @@ export default function AdminEventos() {
 
   const handleEdit = (id) => {
     navigate(`/admin/eventos/${id}/editar`);
+  };
+
+  /* US13: abre a tela de criação já preenchida. A cópia só existe depois que
+     a pessoa salvar — até lá nada foi criado, e sair da tela não deixa
+     evento pela metade. */
+  const handleDuplicate = (event) => {
+    navigate("/admin/eventos/criar", { state: { duplicarDe: duplicarEvento(event) } });
   };
 
   const handleConfirmDelete = async () => {
@@ -94,6 +101,7 @@ export default function AdminEventos() {
                 key={event.id}
                 event={event}
                 onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
                 onDelete={podeExcluir ? (ev) => deleteModal.open(ev) : undefined}
               />
             ))}
@@ -115,6 +123,7 @@ export default function AdminEventos() {
                 key={event.id}
                 event={event}
                 onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
                 onDelete={podeExcluir ? (ev) => deleteModal.open(ev) : undefined}
               />
             ))}
@@ -132,7 +141,7 @@ export default function AdminEventos() {
         {events.anteriores.length > 0 ? (
           <div>
             {events.anteriores.map((event) => (
-              <PastEventRow key={event.id} event={event} />
+              <PastEventRow key={event.id} event={event} onDuplicate={handleDuplicate} />
             ))}
           </div>
         ) : (
