@@ -38,7 +38,10 @@ export default function HeroSection({ countdown, nextEvent }) {
           IDB JOVEM & TEEN
         </h1>
 
-        {/* Countdown */}
+        {/* Contagem regressiva — só quando há evento em cartaz. Sem isso a
+            home anunciava "PRÓXIMO EVENTO" com 00:00:00:00 mesmo quando não
+            havia evento nenhum para anunciar. */}
+        {nextEvent && (
         <div className="mt-6 md:mt-10 w-full max-w-2xl">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 justify-center">
             <span className="text-white font-bold uppercase tracking-widest text-2xl md:text-3xl whitespace-nowrap drop-shadow-md">
@@ -52,6 +55,7 @@ export default function HeroSection({ countdown, nextEvent }) {
             </div>
           </div>
         </div>
+        )}
 
         {nextEvent && (
           <Link

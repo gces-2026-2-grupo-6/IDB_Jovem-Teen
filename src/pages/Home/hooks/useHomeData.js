@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import {
   fetchAllEvents,
   fetchAggregatedGallery,
-  isFutureEvent,
+  isOngoingOrFuture,
+  dateSortKey,
 } from "../../../services/eventService";
 import { getCountdown } from "../../../utils/formatDate";
 
@@ -18,10 +19,21 @@ export function useHomeData() {
       .then((all) => {
         if (!active) return;
         setEvents(all);
-        const proximos = all
-          .filter((e) => isFutureEvent(e.date))
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-        setNextEvent(proximos[0] || all[0] || null);
+        /* O destaque é o primeiro evento que ainda não terminou.
+
+           Antes o filtro era `isFutureEvent(e.date)`, que olha só a data de
+           **início**: um evento de vários dias já em curso não contava como
+           próximo, e a home anunciava outro mais distante — ou nenhum.
+
+           E o reserva era `all[0]`, o primeiro da ordem da API. Sem evento
+           futuro, a home exibia "PRÓXIMO EVENTO" apontando para um evento
+           **que já aconteceu**, com contagem zerada e um botão "Ver evento"
+           levando ao congresso de 2020. Sem nada em cartaz, agora não há
+           destaque — e a seção se esconde. */
+        const emCartaz = all
+          .filter(isOngoingOrFuture)
+          .sort((a, b) => dateSortKey(a.date) - dateSortKey(b.date));
+        setNextEvent(emCartaz[0] || null);
       })
       .catch(() => active && setEvents([]));
     return () => {
