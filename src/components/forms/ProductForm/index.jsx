@@ -32,8 +32,9 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         {/* Nome */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
+          <label htmlFor="name" className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
           <input
+            id="name"
             type="text"
             name="name"
             value={form.name}
@@ -48,8 +49,9 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
 
         {/* Descrição */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Descrição</label>
+          <label htmlFor="description" className="block text-sm font-bold text-[#1E1E1E] mb-2">Descrição</label>
           <textarea
+            id="description"
             name="description"
             value={form.description}
             onChange={handleChange}
@@ -63,8 +65,9 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
 
         {/* Link do produto */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Link do Produto</label>
+          <label htmlFor="link" className="block text-sm font-bold text-[#1E1E1E] mb-2">Link do Produto</label>
           <input
+            id="link"
             type="url"
             name="link"
             value={form.link}
@@ -78,9 +81,10 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
 
         {/* Foto do produto (link de compartilhar do Drive) */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Foto do Produto</label>
+          <label htmlFor="image" className="block text-sm font-bold text-[#1E1E1E] mb-2">Foto do Produto</label>
           <div className="relative">
             <input
+              id="image"
               type="url"
               name="image"
               value={form.image}

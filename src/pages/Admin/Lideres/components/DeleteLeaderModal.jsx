@@ -15,7 +15,7 @@ export default function DeleteLeaderModal({ isOpen, onClose, onConfirm, leader }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Confirmar exclusão de diretor ou líder">
       <div className="bg-white rounded-2xl p-7 sm:p-8 shadow-xl w-[min(92vw,500px)] flex flex-col gap-3.5">
         {/* Mensagem */}
         <h3 className="text-2xl font-bold text-[#1E1E1E] leading-snug">Excluir diretor/líder?</h3>

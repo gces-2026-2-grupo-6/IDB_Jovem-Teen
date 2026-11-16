@@ -77,8 +77,10 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
             <div className="relative mt-3">
               <input
+                id="image"
                 type="url"
                 name="image"
+                aria-label="Link da foto do diretor ou líder"
                 value={form.image}
                 onChange={handleChange}
                 placeholder="Cole o link da foto (Google Drive)"
@@ -94,8 +96,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
           {/* Dados */}
           <div className="space-y-5">
             <div>
-              <label className={LABEL}>Nome</label>
+              <label htmlFor="name" className={LABEL}>Nome</label>
               <input
+                id="name"
                 type="text"
                 name="name"
                 value={form.name}
@@ -107,8 +110,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
 
             <div>
-              <label className={LABEL}>Cargo</label>
+              <label htmlFor="role" className={LABEL}>Cargo</label>
               <input
+                id="role"
                 type="text"
                 name="role"
                 value={form.role}
@@ -121,8 +125,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
 
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
               <div>
-                <label className={LABEL}>Região</label>
+                <label htmlFor="region" className={LABEL}>Região</label>
                 <select
+                  id="region"
                   name="region"
                   value={form.region}
                   onChange={handleChange}
@@ -135,8 +140,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
                 </select>
               </div>
               <div>
-                <label className={LABEL}>Ordem de exibição</label>
+                <label htmlFor="order" className={LABEL}>Ordem de exibição</label>
                 <input
+                  id="order"
                   type="number"
                   name="order"
                   min={0}
@@ -148,8 +154,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
 
             <div>
-              <label className={LABEL}>Redes Sociais</label>
+              <label htmlFor="socialLinks" className={LABEL}>Redes Sociais</label>
               <input
+                id="socialLinks"
                 type="text"
                 name="socialLinks"
                 value={form.socialLinks}
@@ -186,8 +193,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             {form.isPast && (
               <div className="animate-fade-in space-y-3">
                 <div>
-                  <label className={LABEL}>Período de gestão</label>
+                  <label htmlFor="term" className={LABEL}>Período de gestão</label>
                   <input
+                    id="term"
                     type="text"
                     name="term"
                     value={form.term}
@@ -211,8 +219,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
 
         {/* Mini-biografia */}
         <div>
-          <label className={LABEL}>Mini-Biografia</label>
+          <label htmlFor="bio" className={LABEL}>Mini-Biografia</label>
           <textarea
+            id="bio"
             name="bio"
             value={form.bio}
             onChange={handleChange}

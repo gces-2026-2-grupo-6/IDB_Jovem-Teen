@@ -87,7 +87,7 @@ export default function DeleteEventModal({ isOpen, onClose, onConfirm, eventId, 
   const bloqueado = carregando || excluindo;
 
   return (
-    <Modal isOpen={isOpen} onClose={excluindo ? () => {} : onClose}>
+    <Modal isOpen={isOpen} onClose={excluindo ? () => {} : onClose} ariaLabel="Confirmar exclusão de evento">
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-xl max-w-md w-full text-center">
         {/* Ícone de alerta */}
         <div className="flex justify-center mb-5">
