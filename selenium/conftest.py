@@ -54,6 +54,13 @@ def navegador():
     opcoes.add_argument("--disable-dev-shm-usage")
     opcoes.set_capability("goog:loggingPrefs", {"browser": "SEVERE"})
     driver = webdriver.Chrome(options=opcoes)
+    if os.environ.get("DEMO") == "1":
+        import time
+        _get, _click = driver.get, None
+        def devagar(url):
+            _get(url); time.sleep(2)
+        driver.get = devagar
+        driver.implicitly_wait(1)
     yield driver
     driver.quit()
 
