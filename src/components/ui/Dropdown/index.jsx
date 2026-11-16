@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 
@@ -22,15 +22,48 @@ export default function Dropdown({ value, onChange, options, styles, className =
   const currentStyle = styles[value] || Object.values(styles)[0];
   const currentLabel = options.find((o) => o.value === value)?.label || "";
 
+  /* O menu abria sempre logo abaixo do botão, sem conferir o espaço que
+     sobrava. Na última linha de uma tabela em tela de celular ele caía fora
+     da área visível, e não havia mais página para rolar: as opções ficavam
+     inalcançáveis. Agora, quando não cabe embaixo, ele abre para cima; e a
+     posição horizontal é limitada para não passar da borda direita.
+
+     A altura vem do menu já renderizado quando ele existe; na primeira
+     abertura, antes de existir, é estimada pelo número de opções. */
   const updatePosition = useCallback(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 6, left: rect.left });
-  }, []);
+
+    const MARGEM = 6;
+    const ALTURA_POR_OPCAO = 36;
+    const alturaMenu =
+      menuRef.current?.offsetHeight || options.length * ALTURA_POR_OPCAO + 8;
+    const larguraMenu = menuRef.current?.offsetWidth || 144;
+
+    const cabeAbaixo = rect.bottom + MARGEM + alturaMenu <= window.innerHeight;
+    const top = cabeAbaixo
+      ? rect.bottom + MARGEM
+      : Math.max(MARGEM, rect.top - MARGEM - alturaMenu);
+
+    const left = Math.max(
+      MARGEM,
+      Math.min(rect.left, window.innerWidth - larguraMenu - MARGEM)
+    );
+
+    setMenuPos({ top, left });
+  }, [options.length]);
+
+  /* `useLayoutEffect` e não `useEffect`: o reposicionamento acontece antes da
+     pintura, então o menu não aparece no lugar errado para depois saltar. É
+     também aqui que o menu já está montado, o que permite medir a altura real
+     em vez da estimativa. */
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+  }, [isOpen, updatePosition]);
 
   useEffect(() => {
     if (!isOpen) return;
-    updatePosition();
     window.addEventListener("scroll", updatePosition, true);
     window.addEventListener("resize", updatePosition);
     return () => {
