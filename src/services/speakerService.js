@@ -7,6 +7,7 @@ import {
   validarConvidado,
 } from "../utils/convidados";
 import { podeExcluirAgora, ERRO_SEM_PERMISSAO_PARA_EXCLUIR } from "./auth/permissaoAtual";
+import { fetchAllEvents, dateSortKey } from "./eventService";
 
 /* Re-exportado para as telas importarem convidado de um lugar só. */
 export {
@@ -84,6 +85,47 @@ export async function fetchSpeakersByEvent(eventId) {
   const isBanda = (s) => (s.profissao || "") === "Banda";
   const ordenados = [...data].sort((a, b) => Number(isBanda(a)) - Number(isBanda(b)));
   return ordenados.map(adaptSpeaker);
+}
+
+/* Em quais eventos cada convidado já esteve (RF51).
+
+   A API não tem rota de "eventos de um convidado": o vínculo só é legível
+   pelo lado do evento, por `GET /evento/{id}/participantes`. A agregação
+   acontece aqui, num lugar só, e serve tanto à contagem da listagem quanto ao
+   histórico de cada um — antes ela morava dentro da tela de listagem e o
+   resultado era descartado.
+
+   É uma requisição por evento. Enquanto a agenda for pequena isso sai mais
+   barato do que ficar sem o dado; se a quantidade de eventos crescer, a conta
+   se inverte e o certo passa a ser uma rota no back-end.
+
+   Devolve `{ [convidadoId]: Evento[] }`, com os eventos do mais recente para o
+   mais antigo. Falha de um evento não derruba o conjunto: aquele evento
+   simplesmente não contribui. */
+export async function fetchParticipacoesPorConvidado() {
+  const eventos = await fetchAllEvents().catch(() => []);
+
+  const porEvento = await Promise.all(
+    eventos.map((evento) =>
+      fetchSpeakersByEvent(evento.id)
+        .then((lista) => ({ evento, lista }))
+        .catch(() => ({ evento, lista: [] }))
+    )
+  );
+
+  const participacoes = {};
+  for (const { evento, lista } of porEvento) {
+    for (const convidado of lista) {
+      participacoes[convidado.id] = participacoes[convidado.id] || [];
+      participacoes[convidado.id].push(evento);
+    }
+  }
+
+  for (const id of Object.keys(participacoes)) {
+    participacoes[id].sort((a, b) => dateSortKey(b.date) - dateSortKey(a.date));
+  }
+
+  return participacoes;
 }
 
 export async function handleCreateSpeaker(form) {
