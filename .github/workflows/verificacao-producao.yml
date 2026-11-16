@@ -1,0 +1,70 @@
+name: Verificação de produção
+
+# Roda contra o que está publicado, não contra o build do CI.
+#
+# Por que existe: entre 17/10 e 10/11 o Keycloak ficou fora do ar em
+# produção — vinte e quatro dias — e nenhuma verificação do projeto percebeu,
+# porque todas olham para o ambiente local. O site público continuou
+# respondendo; só o login estava morto.
+#
+# Dispara de duas formas:
+#   - à mão, pelo botão "Run workflow", depois de cada deploy;
+#   - sozinho, toda segunda às 12:17 UTC (9h17 em Brasília), para que uma
+#     queda silenciosa apareça em dias, não em semanas.
+
+on:
+  workflow_dispatch:
+    inputs:
+      front_url:
+        description: "Endereço do site"
+        required: false
+        default: "https://idbjovemeteen.tech"
+      api_url:
+        description: "Endereço da API"
+        required: false
+        default: "https://api.idbjovemeteen.tech"
+      keycloak_url:
+        description: "Endereço do Keycloak"
+        required: false
+        default: "https://auth.idbjovemeteen.tech"
+  schedule:
+    - cron: "17 12 * * 1"
+
+jobs:
+  verificar:
+    name: Produção no ar
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r selenium/requirements.txt
+
+      - name: Verificar a produção
+        env:
+          ALVO: producao
+          # Os defaults cobrem o disparo pelo agendamento, que não tem inputs.
+          FRONT_URL: ${{ inputs.front_url || 'https://idbjovemeteen.tech' }}
+          API_URL: ${{ inputs.api_url || 'https://api.idbjovemeteen.tech' }}
+          KEYCLOAK_URL: ${{ inputs.keycloak_url || 'https://auth.idbjovemeteen.tech' }}
+          # Opcionais: com eles o login real é exercitado de ponta a ponta;
+          # sem eles aquele teste se declara inconclusivo em vez de passar.
+          USUARIO_TESTE: ${{ secrets.USUARIO_TESTE }}
+          SENHA_TESTE: ${{ secrets.SENHA_TESTE }}
+        # A entrega do build roda junto: contra produção ela verifica o que
+        # está publicado de verdade, que é onde o fallback da SPA depende da
+        # regra de rewrites do vercel.json.
+        run: |
+          cd selenium
+          pytest testes/test_producao.py testes/test_entrega_do_build.py -v
+
+      - name: Guardar os prints das falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verificacao-producao-relatorio
+          path: selenium/relatorio/
+          retention-days: 14
