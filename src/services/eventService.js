@@ -360,6 +360,46 @@ function validateEventLocation(data) {
   return null;
 }
 
+/* Dados de um evento novo a partir de um existente (US13, RF09).
+
+   Duplicar serve a quem repete o mesmo evento em outra edição: a conferência
+   do ano que vem, o acampamento do próximo semestre. O que descreve o evento
+   é copiado; o que pertence **àquela edição** não é, porque herdar isso cria
+   erro silencioso:
+
+   · **datas** — herdar a data antiga nasceria um evento no passado;
+   · **situação** (US14) — a cópia nasce ativa, mesmo que o original tenha
+     sido cancelado ou adiado;
+   · **galeria** — o link aponta para a pasta de fotos do evento original, e a
+     cópia exibiria as fotos da edição anterior como se fossem suas;
+   · **formulários de inscrição e link de pagamento** — cada edição recebe os
+     próprios inscritos; reaproveitar o link misturaria as duas listas.
+
+   O nome ganha "(cópia)" para que duas edições não fiquem indistinguíveis na
+   agenda enquanto a pessoa ainda não ajustou o título.
+
+   `copiarConvidadosDe` carrega os convidados do original no seletor: a mesma
+   edição costuma repetir boa parte deles, e removê-los é mais rápido do que
+   procurá-los um a um. */
+export function duplicarEvento(evento) {
+  if (!evento) return null;
+
+  return {
+    title: `${evento.title || "Evento"} (cópia)`,
+    tipoEvento: evento.tipoEvento || "",
+    description: evento.description || "",
+    modalidade: evento.modalidade === "online" ? "online" : "presencial",
+    linkTransmissao: evento.linkTransmissao || "",
+    latitude: evento.latitude ?? "",
+    longitude: evento.longitude ?? "",
+    location: evento.location || "",
+    /* A arte de capa costuma valer para a edição seguinte; se não valer, é um
+       campo só para trocar. */
+    linkImagem: evento.linkImagem || "",
+    copiarConvidadosDe: evento.id,
+  };
+}
+
 export async function handleCreateEvent(data) {
   if (!data.title || !data.title.trim()) {
     return { success: false, error: "Nome do evento é obrigatório." };

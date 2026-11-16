@@ -163,7 +163,7 @@ export default function AlbumDoEvento({ eventId, temAlbum }) {
         </p>
       )}
 
-      <Modal isOpen={confirmando} onClose={excluindo ? () => {} : () => setConfirmando(false)}>
+      <Modal isOpen={confirmando} onClose={excluindo ? () => {} : () => setConfirmando(false)} ariaLabel="Confirmar exclusão de foto">
         <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-xl max-w-md w-full text-center">
           <div className="flex justify-center mb-5">
             <div className="w-16 h-16 rounded-full border-[3px] border-red-500 flex items-center justify-center">

@@ -3,7 +3,7 @@ import Modal from "../../../../components/ui/Modal";
 
 export default function DeleteProductModal({ isOpen, onClose, onConfirm }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Confirmar exclusão de produto">
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-xl max-w-sm w-full text-center">
         {/* Ícone de alerta */}
         <div className="flex justify-center mb-5">

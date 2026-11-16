@@ -28,6 +28,7 @@ import AdminEventoEdit from "../pages/Admin/Eventos/Edit";
 import AdminEventoEditSchedule from "../pages/Admin/Eventos/EditSchedule";
 import AdminPalestrantes from "../pages/Admin/Palestrantes";
 import AdminPalestranteCreate from "../pages/Admin/Palestrantes/Create";
+import AdminPalestranteDetails from "../pages/Admin/Palestrantes/Details";
 import AdminPalestranteEdit from "../pages/Admin/Palestrantes/Edit";
 import AdminProdutos from "../pages/Admin/Produtos";
 import AdminProdutoCreate from "../pages/Admin/Produtos/Create";
@@ -60,6 +61,10 @@ export default function AppRoutes() {
                 quem cadastra quem vai nele. */}
             <Route path="/admin/palestrantes" element={<AdminPalestrantes />} />
             <Route path="/admin/palestrantes/criar" element={<AdminPalestranteCreate />} />
+            {/* RF51 — histórico de participações. Vem depois de "criar" para
+                a leitura ficar na ordem do fluxo; o casamento é por segmento
+                estático primeiro, então as duas não competem. */}
+            <Route path="/admin/palestrantes/:id" element={<AdminPalestranteDetails />} />
             <Route path="/admin/palestrantes/:id/editar" element={<AdminPalestranteEdit />} />
           </Route>
 

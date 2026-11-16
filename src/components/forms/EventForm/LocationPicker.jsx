@@ -117,6 +117,7 @@ export default function LocationPicker({
           />
           <input
             type="text"
+            aria-label="Buscar endereço do local"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => results.length && setShowResults(true)}

@@ -7,6 +7,16 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    /* `api/` são funções da Vercel: rodam no Node, não no navegador. Sem isto
+       o `process` delas é acusado como variável não definida. */
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,

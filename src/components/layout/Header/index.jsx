@@ -152,6 +152,7 @@ export default function Header() {
               <Search size={20} className="text-[#FF6D2C] cursor-pointer shrink-0" onClick={handleSearch} />
               <input
                 type="text"
+                aria-label="Pesquisar eventos"
                 placeholder="Pesquisar eventos..."
                 value={searchTerm}
                 onChange={handleSearchChange}
@@ -251,6 +252,7 @@ export default function Header() {
               <Search size={18} className="text-[#FF6D2C] cursor-pointer shrink-0" onClick={handleSearch} />
               <input
                 type="text"
+                aria-label="Pesquisar eventos"
                 placeholder="Pesquisar eventos..."
                 value={searchTerm}
                 onChange={handleSearchChange}

@@ -77,8 +77,9 @@ export default function ConvidadoForm({ initialData = {}, onSubmit, erro }) {
 
         {/* Nome */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
+          <label htmlFor="name" className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
           <input
+            id="name"
             type="text"
             name="name"
             value={form.name}
@@ -93,11 +94,12 @@ export default function ConvidadoForm({ initialData = {}, onSubmit, erro }) {
 
         {/* Função */}
         <div className="mb-1">
-          <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+          <label htmlFor="role" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
             <User size={16} className="text-[#FF6D2C]" />
             Função
           </label>
           <select
+            id="role"
             name="role"
             value={form.role}
             onChange={handleChange}
@@ -119,11 +121,12 @@ export default function ConvidadoForm({ initialData = {}, onSubmit, erro }) {
 
         {/* Foto */}
         <div className="mb-1">
-          <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+          <label htmlFor="image" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
             <ImagePlus size={16} className="text-[#FF6D2C]" />
             Foto
           </label>
           <input
+            id="image"
             type="text"
             name="image"
             value={form.image}
@@ -150,8 +153,9 @@ export default function ConvidadoForm({ initialData = {}, onSubmit, erro }) {
 
         {/* Mini-biografia */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Mini-biografia</label>
+          <label htmlFor="miniBio" className="block text-sm font-bold text-[#1E1E1E] mb-2">Mini-biografia</label>
           <textarea
+            id="miniBio"
             name="miniBio"
             value={form.miniBio}
             onChange={handleChange}

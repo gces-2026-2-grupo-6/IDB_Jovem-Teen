@@ -1,8 +1,16 @@
 {
-  "git": {
-    "deploymentEnabled": false
-  },
   "rewrites": [
+    {
+      "source": "/eventos/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterest|SkypeUriPreview|redditbot|Googlebot|bingbot).*"
+        }
+      ],
+      "destination": "/api/evento-og?slug=:slug"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

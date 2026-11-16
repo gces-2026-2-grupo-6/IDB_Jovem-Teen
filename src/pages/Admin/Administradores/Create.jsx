@@ -63,8 +63,9 @@ export default function AdminAdministradorCreate() {
           )}
 
           <div className="mb-1">
-            <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
+            <label htmlFor="nome" className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
             <input
+              id="nome"
               type="text"
               name="nome"
               value={form.nome}
@@ -78,8 +79,9 @@ export default function AdminAdministradorCreate() {
           <hr className="my-5 border-gray-100" />
 
           <div className="mb-1">
-            <label className="block text-sm font-bold text-[#1E1E1E] mb-2">E-mail</label>
+            <label htmlFor="email" className="block text-sm font-bold text-[#1E1E1E] mb-2">E-mail</label>
             <input
+              id="email"
               type="email"
               name="email"
               value={form.email}
@@ -93,10 +95,11 @@ export default function AdminAdministradorCreate() {
           <hr className="my-5 border-gray-100" />
 
           <div className="mb-1">
-            <label className="block text-sm font-bold text-[#1E1E1E] mb-2">
+            <label htmlFor="keycloakId" className="block text-sm font-bold text-[#1E1E1E] mb-2">
               ID do Keycloak
             </label>
             <input
+              id="keycloakId"
               type="text"
               name="keycloakId"
               value={form.keycloakId}
