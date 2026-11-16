@@ -60,7 +60,7 @@ Quando um teste falha, o print da tela fica em `selenium/relatorio/`.
 | US23 | `test_us23_calendario.py` | Evento do mês passado com "Já aconteceu"; "Ver fotos" leva ao evento; evento futuro sem a etiqueta |
 | — | `test_bugs_encontrados.py` | Defeitos fora das histórias do Trio 01 (xfail) |
 | — | `test_entrega_do_build.py` | O que o servidor entrega: fallback da SPA em rota profunda, 404 da aplicação, navegação sem recarregar, guarda do painel com navegador limpo, `lang` e viewport do `index.html`; **achado**: a rota `/test-coverage` vai para produção expondo cinco serviços em `window` (xfail) |
-| — | `test_producao.py` | O que está publicado: Keycloak do realm no ar, CORS da API, migrações da Sprint 3 no banco de produção, eventos saindo da API até a tela, login real |
+| — | `test_producao.py` | O que está publicado: Keycloak do realm no ar, CORS da API, migrações da Sprint 3 no banco de produção, eventos saindo da API até a tela, o card de compartilhamento por evento servido ao robô de prévia (US08), a guarda dos links do painel e o login real |
 
 Testes marcados com `xfail(strict=True)` descrevem o comportamento esperado
 de algo que hoje está quebrado. Quando o defeito for corrigido, o pytest

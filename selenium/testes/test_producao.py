@@ -20,8 +20,10 @@ Rodar depois de cada deploy:
     pytest testes/test_producao.py -v
 """
 
+import html
 import json
 import os
+import re
 
 import pytest
 import requests
@@ -67,9 +69,22 @@ def test_keycloak_do_realm_responde():
 
 
 def test_api_responde_nas_rotas_publicas():
-    for rota in ("/evento/", "/material/", "/lider/", "/painel/links"):
+    for rota in ("/evento/", "/material/", "/lider/"):
         resposta = requests.get(f"{API_URL}{rota}", timeout=TEMPO_LIMITE)
         assert resposta.status_code == 200, f"{rota} respondeu {resposta.status_code}"
+
+
+def test_links_do_painel_nao_sao_publicos():
+    """Os links fixados do painel (US10) sao so da superadministradora.
+
+    Sem token a rota tem que recusar. Um 200 aqui significaria a guarda de
+    papel desligada em producao; um 404 ou 500, a rota ou a tabela faltando —
+    deploy sem a migracao da Sprint 3.
+    """
+    resposta = requests.get(f"{API_URL}/painel/links", timeout=TEMPO_LIMITE)
+    assert resposta.status_code in (401, 403), (
+        f"/painel/links respondeu {resposta.status_code} sem token"
+    )
 
 
 def test_api_libera_o_dominio_do_site_no_cors():
@@ -131,6 +146,77 @@ def test_eventos_chegam_da_api_ate_a_tela(navegador):
     assert any(nome[:20] in tela for nome in nomes), (
         "a API tem eventos, mas nenhum apareceu na tela"
     )
+
+
+ROBO_DE_PREVIA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+
+
+def _meta(html_da_pagina, propriedade):
+    achado = re.search(
+        rf'<meta property="{re.escape(propriedade)}" content="([^"]*)"', html_da_pagina
+    )
+    return html.unescape(achado.group(1)) if achado else None
+
+
+def _um_evento_publicado():
+    resposta = requests.get(f"{API_URL}/evento/", timeout=TEMPO_LIMITE)
+    assert resposta.status_code == 200
+    dados = resposta.json()
+    eventos = dados if isinstance(dados, list) else dados.get("items", [])
+    com_nome = [e for e in eventos if e.get("nome")]
+    if not com_nome:
+        pytest.skip("nenhum evento cadastrado em producao; nada a conferir no card")
+    return com_nome[0]
+
+
+def test_card_de_compartilhamento_traz_o_evento_e_nao_o_site():
+    """US08 — o link de um evento colado no WhatsApp mostra o evento.
+
+    O robo de previa nao executa JavaScript, entao o `vercel.json` manda as
+    requisicoes dele em `/eventos/:slug` para uma funcao que devolve o HTML ja
+    com as tags do evento. Nenhum teste do projeto exercita essa funcao
+    publicada: os de `tests/utils/us08-open-graph.spec.js` cobrem a montagem
+    do HTML, nao a rota nem o ambiente.
+
+    E e no ambiente que ela quebra em silencio. A funcao le o endereco da API
+    de uma variavel de ambiente do Vercel; se a variavel nao existir para
+    funcoes, ou se a API demorar mais que o prazo, ela **nao falha**: devolve
+    o card institucional, com 200. Quem compartilha ve o card generico e
+    ninguem recebe erro nenhum. Por isso o teste nao se contenta com o 200 —
+    ele exige o nome do evento no titulo.
+    """
+    evento = _um_evento_publicado()
+    resposta = requests.get(
+        f"{FRONT_URL}/eventos/{evento['evento_id']}-evento",
+        headers={"User-Agent": ROBO_DE_PREVIA},
+        timeout=TEMPO_LIMITE,
+    )
+    assert resposta.status_code == 200, f"a rota do card respondeu {resposta.status_code}"
+
+    titulo = _meta(resposta.text, "og:title")
+    assert titulo, "a resposta ao robo nao traz og:title — a regra do vercel.json nao casou"
+    assert evento["nome"] in titulo, (
+        f"o card nao traz o evento (og:title={titulo!r}): a funcao caiu no card "
+        "institucional — confira a variavel de ambiente com o endereco da API no Vercel"
+    )
+    assert _meta(resposta.text, "og:type") == "article"
+    assert _meta(resposta.text, "og:image"), "card sem imagem"
+
+
+def test_visitante_comum_recebe_a_aplicacao_e_nao_o_card():
+    """O inverso do anterior: a regra do robo nao pode pegar gente.
+
+    Se a condicao de user-agent do `vercel.json` casar demais, o visitante
+    recebe o HTML cru do card no lugar do site.
+    """
+    evento = _um_evento_publicado()
+    resposta = requests.get(
+        f"{FRONT_URL}/eventos/{evento['evento_id']}-evento",
+        headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/130.0"},
+        timeout=TEMPO_LIMITE,
+    )
+    assert resposta.status_code == 200
+    assert 'id="root"' in resposta.text, "o visitante comum nao recebeu a aplicacao"
 
 
 def test_login_real_de_ponta_a_ponta(navegador):
