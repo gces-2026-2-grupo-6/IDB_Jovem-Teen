@@ -186,11 +186,9 @@ test.describe('Painel em tela pequena — ações', () => {
   }
 
   test('as opções de status do voluntário podem ser tocadas', async ({ page }) => {
-    /* DEFEITO CONHECIDO (Pixel 7 e iPhone 13): o menu do status abre com
-       posição fixa logo abaixo do botão, sem conferir o espaço que sobra. Na
-       última linha da tabela as opções ficam abaixo da área visível e não há
-       mais página para rolar. Quando for corrigido, retirar esta linha. */
-    test.fail(true, 'opções do status fora da tela');
+    /* Era defeito conhecido: o menu abria sempre logo abaixo do botão e, na
+       última linha da tabela, caía fora da área visível sem página para
+       rolar. O Dropdown passou a abrir para cima quando não cabe embaixo. */
 
     await abrirPainel(page, '/admin/voluntarios/1');
     const status = page.getByRole('button', { name: /^(Pendente|Aprovado|Reprovado)$/ }).last();
