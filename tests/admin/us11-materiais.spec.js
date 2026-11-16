@@ -85,7 +85,10 @@ test.describe('US11 - Painel de materiais (superadministradora)', () => {
     await expect(page.getByLabel('Título')).toHaveAttribute('required', '');
   });
 
-  test('link sem https:// é recusado com explicação', async ({ page }) => {
+  /* Marcado @fonte: chama o serviço dentro do navegador, e o caminho
+     `/src/...` só existe no servidor de desenvolvimento. É um teste de
+     módulo, não de tela — o lugar dele é esse mesmo. */
+  test('link sem https:// é recusado com explicação', { tag: '@fonte' }, async ({ page }) => {
     await page.goto('/admin/materiais/criar');
 
     await page.getByLabel('Título').fill('Material com link inválido');
