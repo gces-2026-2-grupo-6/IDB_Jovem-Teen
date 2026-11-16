@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, Download } from "lucide-react";
 import { useGallery } from "./hooks/useGallery";
 
 export default function Galeria() {
@@ -180,7 +180,7 @@ export default function Galeria() {
             {selectedPhotos.map((photo) => (
               <div
                 key={photo.id}
-                className="group cursor-pointer"
+                className="group relative"
               >
 
                 <div className="overflow-hidden rounded-2xl aspect-[4/3] shadow-lg">
@@ -192,6 +192,21 @@ export default function Galeria() {
                   />
 
                 </div>
+
+                {/* US11, CA5: toda foto publicada tem a opção de baixar. O
+                    endereço vem pronto do back-end e sai com o nome original,
+                    sem pedir login. */}
+                {photo.downloadUrl && (
+                  <a
+                    href={photo.downloadUrl}
+                    download
+                    title={`Baixar foto de ${photo.event}`}
+                    aria-label={`Baixar foto de ${photo.event}`}
+                    className="absolute bottom-3 right-3 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 hover:bg-black/80 transition-opacity"
+                  >
+                    <Download size={18} />
+                  </a>
+                )}
 
               </div>
             ))}

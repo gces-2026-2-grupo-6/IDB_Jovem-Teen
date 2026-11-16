@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import defaultEventImage from "../../../assets/images/idbJovemOne.png";
+import EventStatusNotice from "../../../components/ui/EventStatusNotice";
 
 export default function EventosSection({ events = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -84,6 +85,10 @@ export default function EventosSection({ events = [] }) {
             >
               {featured.description}
             </p>
+
+            {/* Aviso na home (US14, CA2): o evento em destaque continua no
+                carrossel, com a situação dita por extenso. */}
+            <EventStatusNotice event={featured} className="mt-4 relative z-10" />
           </div>
         </div>
       )}
