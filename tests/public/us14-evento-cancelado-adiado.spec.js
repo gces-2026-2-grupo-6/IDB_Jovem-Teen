@@ -8,68 +8,20 @@ import { setupApiMock } from '../helpers/apiMock';
  * evento tiraria do visitante justamente o aviso que a história quer dar.
  */
 
-/* Serve o evento já marcado, antes de a tela abrir.
+/* O estado desejado vem da própria semente do mock, por `setupApiMock`.
 
-   Antes isto importava `/src/services/eventService.js` para chamar o PATCH do
-   mock. Funcionava no servidor de desenvolvimento e **quebrava no CI**: o
-   projeto `build` roda contra o bundle publicado, onde o caminho `/src/...`
-   não existe. Marcar com `@fonte` resolveria, mas tiraria do build testes que
-   são justamente de tela pública — é lá que eles têm valor.
-
-   Então o cenário é servido direto. A lista inteira vem daqui, sem repassar a
-   resposta do mock: `route.fetch()` sairia para a rede real, porque as rotas
-   do Playwright são atendidas da mais recente para a mais antiga. */
-const pad = (n) => String(n).padStart(2, '0');
-
-/* Mesmo critério do mock: um dia do mês corrente, à frente de hoje, para o
-   evento aparecer na agenda e no calendário da página inicial. */
-function diaNoMesCorrente() {
-  const hoje = new Date();
-  const dia = hoje.getDate() <= 26 ? hoje.getDate() + 2 : hoje.getDate();
-  return `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}-${pad(dia)}`;
-}
-
-function eventoRetiro({ situacao, novaData }) {
-  const dia = diaNoMesCorrente();
-  return {
-    evento_id: 1,
-    nome: 'Retiro de Verão',
-    descricao: 'Um retiro incrível para os jovens.',
-    tipo_evento: 'Acampamento',
-    data_inicio: `${dia}T08:00:00`,
-    data_fim: `${dia}T18:00:00`,
-    datas: null,
-    nome_local: 'Sítio Boa Vista',
-    local_latitude: -8.05,
-    local_longitude: -34.9,
-    link_galeria: '',
-    formulario_link: 'https://forms.gle/retiro',
-    formulario_participante_link: 'https://forms.gle/retiro-participantes',
-    link_imagem: '',
-    calendario_evento_id: null,
-    situacao,
-    nova_data: novaData,
-  };
-}
-
-async function marcarEvento(page, { situacao, novaData = null }) {
-  const evento = eventoRetiro({ situacao, novaData });
-  const json = (corpo) => ({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(corpo),
-  });
-
-  await page.route(/^https?:\/\/[^/]+\/evento\/?(\?.*)?$/, (route) =>
-    route.fulfill(json([evento]))
-  );
-  await page.route(/^https?:\/\/[^/]+\/evento\/1$/, (route) => route.fulfill(json(evento)));
+   Antes isto importava `/src/services/eventService.js` para chamar o PATCH e
+   virar o estado. Funcionava no servidor de desenvolvimento e quebrava no
+   projeto `build`, que roda contra o artefato publicado, onde `/src/...` não
+   é servido. Marcar com `@fonte` tiraria do build sete testes que são
+   justamente do que o visitante vê — o lugar deles é lá. */
+async function abrirCom(page, { situacao, novaData = null }) {
+  await setupApiMock(page, { evento: { situacao, nova_data: novaData } });
 }
 
 test.describe('US14 - Página do evento', () => {
   test('CA2: evento cancelado mostra o aviso', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'cancelado' });
+    await abrirCom(page, { situacao: 'cancelado' });
 
     await page.goto('/eventos/1-retiro-de-verao');
 
@@ -77,8 +29,7 @@ test.describe('US14 - Página do evento', () => {
   });
 
   test('CA4: evento adiado com nova data mostra a data', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'adiado', novaData: '2027-04-10T09:00:00' });
+    await abrirCom(page, { situacao: 'adiado', novaData: '2027-04-10T09:00:00' });
 
     await page.goto('/eventos/1-retiro-de-verao');
 
@@ -86,8 +37,7 @@ test.describe('US14 - Página do evento', () => {
   });
 
   test('CA4: evento adiado sem nova data avisa que ela vem depois', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'adiado' });
+    await abrirCom(page, { situacao: 'adiado' });
 
     await page.goto('/eventos/1-retiro-de-verao');
 
@@ -95,8 +45,7 @@ test.describe('US14 - Página do evento', () => {
   });
 
   test('CA4: os botões de inscrição somem enquanto durar a situação', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'cancelado' });
+    await abrirCom(page, { situacao: 'cancelado' });
 
     await page.goto('/eventos/1-retiro-de-verao');
 
@@ -117,8 +66,7 @@ test.describe('US14 - Página do evento', () => {
 
 test.describe('US14 - Agenda de eventos', () => {
   test('CA4: o evento continua na lista, com aviso e sem inscrição', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'cancelado' });
+    await abrirCom(page, { situacao: 'cancelado' });
 
     await page.goto('/eventos');
 
@@ -138,8 +86,7 @@ test.describe('US14 - Agenda de eventos', () => {
   });
 
   test('o adiado mostra a nova data no card', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'adiado', novaData: '2027-04-10T09:00:00' });
+    await abrirCom(page, { situacao: 'adiado', novaData: '2027-04-10T09:00:00' });
 
     await page.goto('/eventos');
 
@@ -152,8 +99,7 @@ test.describe('US14 - Agenda de eventos', () => {
 
 test.describe('US14 - Página inicial', () => {
   test('CA2: o calendário da home mostra a situação', async ({ page }) => {
-    await setupApiMock(page);
-    await marcarEvento(page, { situacao: 'cancelado' });
+    await abrirCom(page, { situacao: 'cancelado' });
 
     await page.goto('/');
 

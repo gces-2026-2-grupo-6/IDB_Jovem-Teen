@@ -347,8 +347,14 @@ function erroCargoOcupado(ocupante, body) {
   );
 }
 
-export async function setupApiMock(page) {
+/* `evento` sobrepõe campos do primeiro evento da semente, para o teste abrir
+   a tela com ele já no estado desejado — marcado como cancelado ou adiado,
+   por exemplo. Antes disso o teste precisava chamar o serviço de dentro do
+   navegador para virar o estado, o que só funcionava no servidor de
+   desenvolvimento e quebrava no projeto `build`. */
+export async function setupApiMock(page, { evento } = {}) {
   const db = makeSeed();
+  if (evento) Object.assign(db.events[0], evento);
 
   /* Imagens e tiles externos → devolve um pixel para não travar o load */
   await page.route(

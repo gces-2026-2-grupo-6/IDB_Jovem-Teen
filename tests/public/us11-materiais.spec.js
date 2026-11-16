@@ -78,10 +78,18 @@ test.describe('US11 - Área pública de materiais', () => {
     await expect(page.getByRole('heading', { name: 'Manual do Líder 2026' })).toBeVisible();
   });
 
-  test('CA3: o visitante chega aos materiais a partir da página inicial', async ({ page }) => {
+  test('CA3: o visitante chega aos materiais a partir da página inicial', async ({ page, isMobile }) => {
     await setupApiMock(page);
 
     await page.goto('/');
+
+    /* No celular a navegação mora no menu sanduíche: sem abri-lo, o link
+       existe no DOM mas não é clicável. O caminho continua existindo — é o
+       mesmo de qualquer outro item do menu. */
+    if (isMobile) {
+      await page.getByRole('button', { name: /menu/i }).first().click();
+    }
+
     await page.getByRole('link', { name: 'Materiais' }).first().click();
 
     await expect(page).toHaveURL(/\/materiais$/);

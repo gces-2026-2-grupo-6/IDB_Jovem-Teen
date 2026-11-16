@@ -72,8 +72,12 @@ export function UpcomingEventRow({ event, onEdit, onDelete }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="font-semibold text-sm text-[#1E1E1E] truncate">{event.title}</p>
+        {/* `flex-wrap`: na largura do celular sobram ~88px para esta coluna, e
+            o selo (~82px, `shrink-0`) espremia o título até largura zero — o
+            nome do evento sumia da lista assim que ele era marcado. Deixando
+            quebrar, o título fica com a linha inteira e o selo desce. */}
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <p className="font-semibold text-sm text-[#1E1E1E] truncate max-w-full">{event.title}</p>
           {/* A administradora precisa ver de relance o que já está marcado,
               sem abrir cada evento (US14). */}
           <EventStatusBadge event={event} className="shrink-0" />

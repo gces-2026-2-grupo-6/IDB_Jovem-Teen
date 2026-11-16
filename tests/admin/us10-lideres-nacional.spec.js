@@ -15,7 +15,7 @@ import { loginAsAdmin, loginComPapeis } from '../helpers/adminAuth';
 const CARD = 'Cadastro nacional de líderes';
 
 test.describe('US10 - Links fixados na página inicial do painel', () => {
-  test('CA1: a superadministradora vê o link de cadastro e pode abri-lo e copiá-lo', async ({ page }) => {
+  test('CA1: a superadministradora vê o link de cadastro e pode abri-lo e copiá-lo', async ({ page, browserName }) => {
     await setupApiMock(page);
     await loginAsAdmin(page);
 
@@ -30,13 +30,25 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
     await expect(abrir).toHaveAttribute('href', 'https://forms.gle/cadastro-lideres');
     await expect(abrir).toHaveAttribute('target', '_blank');
 
-    /* Copiar: o endereço vai para a área de transferência, para divulgar. */
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    /* Copiar: o endereço vai para a área de transferência, para divulgar.
+
+       O WebKit não conhece `clipboard-read`/`clipboard-write` e recusa o
+       `grantPermissions`. Sem a permissão não dá para ler o que foi copiado,
+       então ali a verificação para no retorno visual — que é o que a pessoa
+       de fato vê. O resto do critério continua coberto em todos os
+       navegadores. */
+    const leClipboard = browserName !== 'webkit';
+    if (leClipboard) {
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    }
+
     await card.getByRole('button', { name: 'Copiar' }).click();
     await expect(card.getByRole('button', { name: 'Copiado' })).toBeVisible();
 
-    const copiado = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copiado).toBe('https://forms.gle/cadastro-lideres');
+    if (leClipboard) {
+      const copiado = await page.evaluate(() => navigator.clipboard.readText());
+      expect(copiado).toBe('https://forms.gle/cadastro-lideres');
+    }
   });
 
   test('CA2: o link da planilha aparece separado do de cadastro', async ({ page }) => {
