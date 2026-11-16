@@ -177,6 +177,20 @@ function adaptEvent(apiEvent) {
     novaData: apiEvent.nova_data || null,
     calendarioEventoId: apiEvent.calendario_evento_id || null,
     tipoEvento: apiEvent.tipo_evento || "",
+    /* Campos da US02. O formulário já os coletava, mas eles não eram nem
+       enviados nem lidos: a pessoa digitava, salvava e o dado sumia sem aviso.
+
+       ATENÇÃO — os nomes abaixo são os que o front **assume**; o back-end
+       ainda não tem as colunas. Enquanto não tiver, a API ignora o campo
+       desconhecido (os schemas não usam extra="forbid") e estas linhas ficam
+       inertes, sem quebrar nada. No dia em que as colunas existirem, conferir
+       os nomes aqui antes de dar por integrado — na US09 três nomes assumidos
+       estavam errados. É o único lugar a mudar. */
+    vagas: apiEvent.vagas ?? "",
+    contatoResponsavel: apiEvent.contato_responsavel || "",
+    valorInvestimento: apiEvent.valor_investimento || "",
+    linkPagamento: apiEvent.link_pagamento || "",
+    linkRegulamento: apiEvent.link_regulamento || "",
     linkImagem: apiEvent.link_imagem || "",
     image: toDriveImageUrl(apiEvent.link_imagem) || DEFAULT_EVENT_IMAGE,
     category: apiEvent.tipo_evento || "Outros",
@@ -214,6 +228,16 @@ function toApiEvent(form) {
     formulario_link: form.linkFormularioVoluntarios || null,
     formulario_participante_link: form.linkFormularioParticipantes || null,
     link_imagem: (form.image && form.image.trim()) || null,
+    /* US02 — ver a nota em `adaptEvent`. Enviados mesmo sem coluna
+       correspondente: campo desconhecido é ignorado pela API, então nada
+       quebra, e o dia em que o back-end os guardar nada mais precisa mudar
+       aqui. Número vazio vai como null, e não como "", para não gravar texto
+       numa coluna numérica. */
+    vagas: form.vagas === "" || form.vagas == null ? null : Number(form.vagas),
+    contato_responsavel: form.contatoResponsavel?.trim() || null,
+    valor_investimento: form.valorInvestimento?.trim() || null,
+    link_pagamento: form.linkPagamento?.trim() || null,
+    link_regulamento: form.linkRegulamento?.trim() || null,
   };
 }
 
