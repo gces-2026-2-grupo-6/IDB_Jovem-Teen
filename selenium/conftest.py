@@ -13,8 +13,23 @@ PASTA_RELATORIO = Path(__file__).parent / "relatorio"
 
 
 @pytest.fixture(scope="session", autouse=True)
-def ambiente_no_ar():
-    """Falha cedo, com orientação, se o sistema não estiver de pé."""
+def ambiente_no_ar(request):
+    """Falha cedo, com orientação, se o sistema não estiver de pé.
+
+    Os testes marcados com `fora_do_ambiente` não precisam da pilha local:
+    eles olham para o que o servidor entrega (o build no CI) ou para a
+    produção publicada. Quando a execução só tem desses, a verificação é
+    dispensada — senão `pytest.exit` derrubaria a sessão inteira por falta de
+    um ambiente que ninguém ia usar.
+    """
+    precisam = [
+        item
+        for item in request.session.items
+        if "fora_do_ambiente" not in item.keywords
+    ]
+    if not precisam:
+        return
+
     faltando = []
     for nome, url in [
         ("front", apoio.FRONT_URL),
@@ -39,6 +54,13 @@ def navegador():
     opcoes.add_argument("--disable-dev-shm-usage")
     opcoes.set_capability("goog:loggingPrefs", {"browser": "SEVERE"})
     driver = webdriver.Chrome(options=opcoes)
+    if os.environ.get("DEMO") == "1":
+        import time
+        _get, _click = driver.get, None
+        def devagar(url):
+            _get(url); time.sleep(2)
+        driver.get = devagar
+        driver.implicitly_wait(1)
     yield driver
     driver.quit()
 

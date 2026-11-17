@@ -59,10 +59,43 @@ Quando um teste falha, o print da tela fica em `selenium/relatorio/`.
 | US22 | `test_us22_missao_visao_valores.py` | "Saiba mais" e rodapé levam a Quem somos; missão publicada sem texto inventado; tela só da superadmin; aviso ao salvar; **lacuna**: conteúdo salvo não chega à página (xfail) |
 | US23 | `test_us23_calendario.py` | Evento do mês passado com "Já aconteceu"; "Ver fotos" leva ao evento; evento futuro sem a etiqueta |
 | — | `test_bugs_encontrados.py` | Defeitos fora das histórias do Trio 01 (xfail) |
+| — | `test_entrega_do_build.py` | O que o servidor entrega: fallback da SPA em rota profunda, 404 da aplicação, navegação sem recarregar, guarda do painel com navegador limpo, `lang` e viewport do `index.html`; **achado**: a rota `/test-coverage` vai para produção expondo cinco serviços em `window` (xfail) |
+| — | `test_producao.py` | O que está publicado: Keycloak do realm no ar, CORS da API, migrações da Sprint 3 no banco de produção, eventos saindo da API até a tela, o card de compartilhamento por evento servido ao robô de prévia (US08), a guarda dos links do painel e o login real |
 
 Testes marcados com `xfail(strict=True)` descrevem o comportamento esperado
 de algo que hoje está quebrado. Quando o defeito for corrigido, o pytest
 acusa `XPASS` e o marcador deve sair, mantendo o teste como regressão.
+
+### Os dois últimos não usam a pilha local
+
+`test_entrega_do_build.py` e `test_producao.py` estão marcados com
+`fora_do_ambiente`. Eles não precisam de banco, Keycloak nem back-end: um
+olha para o que o servidor devolve antes de a aplicação montar, o outro para
+o que está publicado. Por isso a verificação de ambiente do `conftest.py` é
+dispensada quando a execução só tem desses — senão ela derrubaria a sessão
+por falta de um ambiente que ninguém ia usar.
+
+```bash
+# só a entrega, contra um build servido localmente
+npm run build && npx vite preview --port 4173 &
+cd selenium && FRONT_URL=http://localhost:4173 pytest testes/test_entrega_do_build.py
+
+# contra a produção, depois de cada deploy
+ALVO=producao \
+FRONT_URL=https://idbjovemeteen.tech \
+API_URL=https://api.idbjovemeteen.tech \
+KEYCLOAK_URL=https://auth.idbjovemeteen.tech \
+pytest testes/test_producao.py testes/test_entrega_do_build.py
+```
+
+Sem `ALVO=producao` os testes de produção se declaram inconclusivos em vez de
+falharem. Pular é melhor que falhar: falha que todo mundo sabe que vai
+acontecer é falha que todo mundo aprende a ignorar.
+
+No CI isso está em dois lugares: o job `Selenium (entrega do build)`, que
+consome o mesmo artefato do job de E2E, e o workflow
+`verificacao-producao.yml`, manual depois de cada deploy e agendado às
+segundas.
 
 ## Defeitos encontrados
 

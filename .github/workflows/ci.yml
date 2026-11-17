@@ -94,3 +94,116 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+  selenium-entrega:
+    name: Selenium (entrega do build)
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: npm ci
+
+      # O mesmo artefato que o job de E2E consome. Estes testes olham para o
+      # que o servidor entrega — fallback da SPA, idioma e viewport do
+      # index.html, o que o build publica junto — e por isso nao precisam de
+      # banco, Keycloak nem back-end.
+      - name: Baixar o build gerado no job anterior
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - run: pip install -r selenium/requirements.txt
+
+      # O Chrome ja vem no runner e o Selenium Manager, embutido no selenium
+      # 4.6+, resolve o chromedriver correspondente sozinho.
+      - name: Servir o build e verificar a entrega
+        env:
+          FRONT_URL: http://localhost:4173
+        run: |
+          npx vite preview --port 4173 &
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:4173/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://localhost:4173/ \
+            || { echo "o servidor do build nao subiu"; exit 1; }
+          cd selenium && pytest testes/test_entrega_do_build.py -v
+
+  selenium-funcional:
+    name: Selenium (histórias, pilha real)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # O docker-compose da suite constroi o back-end a partir do codigo
+      # fonte. Os dois repositorios sao publicos, entao o GITHUB_TOKEN padrao
+      # da conta deste checkout.
+      - name: Checkout do back-end
+        uses: actions/checkout@v4
+        with:
+          repository: gces-2026-2-grupo-6/IDB_Jovem-Backend
+          path: backend
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: npm ci
+
+      - run: pip install -r selenium/requirements.txt
+
+      - name: Subir banco, Keycloak e back-end
+        env:
+          BACKEND_DIR: ${{ github.workspace }}/backend
+        run: ./selenium/ambiente/subir.sh
+
+      # O servidor do front sobe no MESMO passo que roda os testes, de
+      # proposito: processo em segundo plano iniciado num passo e usado em
+      # outro depende de o runner nao limpar a arvore de processos entre os
+      # dois, e isso nao e contrato — e uma falha dificil de ler quando
+      # acontece.
+      - name: Subir o front e rodar os testes funcionais
+        env:
+          VITE_API_URL: http://localhost:8000
+          VITE_KEYCLOAK_URL: http://localhost:8080
+          VITE_KEYCLOAK_REALM: jovem
+          VITE_KEYCLOAK_CLIENT_ID: jovem-backend
+        # "not fora_do_ambiente" deixa de fora a entrega do build e a
+        # verificacao de producao, que tem jobs proprios e nao usam esta pilha.
+        run: |
+          npx vite --port 5173 &
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:5173/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://localhost:5173/ \
+            || { echo "o front nao subiu"; exit 1; }
+          cd selenium && pytest testes -v -m "not fora_do_ambiente"
+
+      - name: Guardar os prints das falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-relatorio
+          path: selenium/relatorio/
+          retention-days: 14
+
+      - name: Derrubar o ambiente
+        if: always()
+        run: ./selenium/ambiente/descer.sh || true
