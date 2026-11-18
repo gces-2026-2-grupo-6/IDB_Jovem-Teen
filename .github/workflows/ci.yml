@@ -49,9 +49,16 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: build
-    # Versao fixa: o ubuntu-latest passou a ser o 26.04, e o Playwright 1.60
-    # nao instala Chromium nem WebKit nele.
     runs-on: ubuntu-24.04
+    # Se o job pendurar, falha em 20 min em vez de ocupar o runner por horas
+    # (o default do GitHub e 360 min).
+    timeout-minutes: 20
+    # O container oficial do Playwright ja traz Chromium, WebKit e todas as
+    # libs de SO. Isso elimina o passo `playwright install-deps` (que roda
+    # `apt-get` e pendurava o job quando o lock do apt do runner nao liberava)
+    # e o cache de navegadores. A tag casa com @playwright/test (1.60.0).
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-jammy
     steps:
       - uses: actions/checkout@v4
 
@@ -70,21 +77,7 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-webkit-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright Chromium e WebKit
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-
-      - name: Install Playwright OS dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
-
+      # Sem install: os navegadores e as libs de SO ja estao no container.
       - run: npx playwright test
 
       - name: Upload Playwright report
