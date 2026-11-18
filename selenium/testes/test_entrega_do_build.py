@@ -127,6 +127,22 @@ def test_painel_administrativo_exige_sessao(navegador):
     assert navegador.find_elements(By.CSS_SELECTOR, 'input[name="usuario"]')
 
 
+def test_rota_de_pedidos_exige_sessao(navegador):
+    """US21: a tela de pedidos do setor Produtos não é pública.
+
+    `/admin/pedidos` é a tela da US21 (CA1/CA2). Como qualquer rota do
+    painel, chegar nela sem sessão tem que devolver ao login — o visitante
+    que recebeu o link por engano não pode ver pedido de ninguém. O controle
+    que vale é o do servidor (o `GET /pedido/` exige o setor); aqui se
+    verifica que a rota existe e que a guarda do front não a deixa aberta.
+    """
+    montar(navegador, "/admin/pedidos")
+    WebDriverWait(navegador, 15).until(
+        lambda d: d.current_url.rstrip("/").endswith("/login")
+    )
+    assert navegador.find_elements(By.CSS_SELECTOR, 'input[name="usuario"]')
+
+
 def test_html_servido_declara_idioma_e_viewport(navegador):
     """Verificação do documento entregue, antes de a aplicação montar.
 

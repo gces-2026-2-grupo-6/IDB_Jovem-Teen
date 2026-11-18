@@ -11,6 +11,8 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
     description: initialData.description || "",
     link: initialData.link || "",
     image: initialData.imageRaw || "",
+    // US21: formulário do Google que recebe os pedidos/interesses deste produto.
+    formularioPedidoLink: initialData.formularioPedidoLink || "",
   });
 
   const handleChange = (e) => {
@@ -75,6 +77,27 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
             placeholder="http://produto.com"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-[#FFF8F3] text-sm text-[#1E1E1E] placeholder-[#1E1E1E]/40 focus:border-[#FF6D2C] focus:ring-2 focus:ring-[#FF6D2C]/20 transition-all"
           />
+        </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {/* Formulário de pedido (US21) */}
+        <div className="mb-1">
+          <label htmlFor="formularioPedidoLink" className="block text-sm font-bold text-[#1E1E1E] mb-2">
+            Formulário de Pedido
+          </label>
+          <input
+            id="formularioPedidoLink"
+            type="url"
+            name="formularioPedidoLink"
+            value={form.formularioPedidoLink}
+            onChange={handleChange}
+            placeholder="https://docs.google.com/forms/..."
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-[#FFF8F3] text-sm text-[#1E1E1E] placeholder-[#1E1E1E]/40 focus:border-[#FF6D2C] focus:ring-2 focus:ring-[#FF6D2C]/20 transition-all"
+          />
+          <p className="mt-1.5 text-xs text-[#1E1E1E]/50">
+            Formulário do Google onde o visitante registra o interesse. Os pedidos aparecem na tela de Pedidos ao sincronizar.
+          </p>
         </div>
 
         <hr className="my-5 border-gray-100" />
