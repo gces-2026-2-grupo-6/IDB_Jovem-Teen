@@ -50,9 +50,10 @@ jobs:
     name: E2E (Playwright)
     needs: build
     runs-on: ubuntu-24.04
-    # Se o job pendurar, falha em 20 min em vez de ocupar o runner por horas
-    # (o default do GitHub e 360 min).
-    timeout-minutes: 20
+    # A suite tem ~1928 testes em 1 worker e leva ~24 min; 45 min da margem e
+    # ainda falha rapido se pendurar, em vez de ocupar o runner por horas (o
+    # default do GitHub e 360 min).
+    timeout-minutes: 45
     # O container oficial do Playwright ja traz Chromium, WebKit e todas as
     # libs de SO. Isso elimina o passo `playwright install-deps` (que roda
     # `apt-get` e pendurava o job quando o lock do apt do runner nao liberava)
