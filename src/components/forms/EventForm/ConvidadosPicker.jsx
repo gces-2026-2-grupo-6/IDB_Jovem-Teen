@@ -21,7 +21,11 @@ const inputClass =
 
    Quem ainda não existe pode ser criado aqui mesmo, sem perder o que já foi
    preenchido no evento. */
-export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
+export default function ConvidadosPicker({ eventId, preCarregarDe, selecionados, onChange }) {
+  /* De qual evento vêm os convidados já marcados. Na edição é o próprio
+     evento; numa duplicação (US13) é o evento de origem, porque a cópia ainda
+     não existe. */
+  const origemDosVinculos = eventId ?? preCarregarDe;
   const [convidados, setConvidados] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [termo, setTermo] = useState("");
@@ -43,7 +47,9 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
       try {
         const [catalogo, vinculados] = await Promise.all([
           fetchSpeakers().catch(() => []),
-          eventId ? fetchSpeakersByEvent(eventId).catch(() => []) : Promise.resolve([]),
+          origemDosVinculos
+            ? fetchSpeakersByEvent(origemDosVinculos).catch(() => [])
+            : Promise.resolve([]),
         ]);
         if (!ativo) return;
         setConvidados(catalogo);
@@ -62,7 +68,7 @@ export default function ConvidadosPicker({ eventId, selecionados, onChange }) {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [origemDosVinculos]);
 
   const escolhidos = useMemo(
     () => selecionados.map((id) => convidados.find((c) => c.id === id)).filter(Boolean),

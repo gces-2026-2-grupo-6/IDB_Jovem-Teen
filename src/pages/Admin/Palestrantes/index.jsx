@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, History } from "lucide-react";
 import {
   fetchSpeakers,
-  fetchSpeakersByEvent,
+  fetchParticipacoesPorConvidado,
   handleDeleteSpeaker,
   filtrarConvidados,
   normalizarFuncao,
 } from "../../../services/speakerService";
-import { fetchAllEvents } from "../../../services/eventService";
 import useModal from "../../../hooks/useModal";
 import usePermissao from "../../../hooks/usePermissao";
 import SectionTitle from "../../../components/ui/SectionTitle";
@@ -26,32 +25,13 @@ export default function AdminPalestrantes() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
-  /* Quantos eventos usam cada convidado. Serve para avisar antes de excluir —
-     apagar um convidado vinculado o remove de eventos já publicados. */
-  const carregarVinculos = async () => {
-    const eventos = await fetchAllEvents().catch(() => []);
-    const porEvento = await Promise.all(
-      eventos.map((ev) =>
-        fetchSpeakersByEvent(ev.id)
-          .then((lista) => ({ evento: ev, lista }))
-          .catch(() => ({ evento: ev, lista: [] }))
-      )
-    );
-
-    const contagem = {};
-    for (const { evento, lista } of porEvento) {
-      for (const convidado of lista) {
-        contagem[convidado.id] = contagem[convidado.id] || [];
-        contagem[convidado.id].push(evento.title);
-      }
-    }
-    return contagem;
-  };
-
+  /* Em quais eventos cada convidado já esteve. Serve a duas coisas: avisar
+     antes de excluir alguém vinculado e alimentar o histórico da RF51. A
+     agregação mora no serviço, porque a tela de detalhe usa a mesma. */
   const recarregar = async () => {
     setLoading(true);
     try {
-      const [lista, contagem] = await Promise.all([fetchSpeakers(), carregarVinculos()]);
+      const [lista, contagem] = await Promise.all([fetchSpeakers(), fetchParticipacoesPorConvidado()]);
       setConvidados(lista);
       setVinculos(contagem);
     } catch {
@@ -66,7 +46,7 @@ export default function AdminPalestrantes() {
 
     (async () => {
       try {
-        const [lista, contagem] = await Promise.all([fetchSpeakers(), carregarVinculos()]);
+        const [lista, contagem] = await Promise.all([fetchSpeakers(), fetchParticipacoesPorConvidado()]);
         if (!ativo) return;
         setConvidados(lista);
         setVinculos(contagem);
@@ -151,9 +131,15 @@ export default function AdminPalestrantes() {
                   />
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[#1E1E1E] truncate">
+                    {/* O nome leva ao histórico de participações (RF51): é o
+                        caminho natural de quem quer saber onde a pessoa já
+                        esteve, e a contagem ao lado só dizia quantos. */}
+                    <Link
+                      to={`/admin/palestrantes/${convidado.id}`}
+                      className="font-semibold text-sm text-[#1E1E1E] truncate block hover:text-[#FF6D2C] transition-colors"
+                    >
                       {convidado.name}
-                    </p>
+                    </Link>
                     <span className="text-xs text-[#1E1E1E]/50">
                       {convidado.role || normalizarFuncao(convidado.role)}
                     </span>
@@ -170,6 +156,14 @@ export default function AdminPalestrantes() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => navigate(`/admin/palestrantes/${convidado.id}`)}
+                      className="w-9 h-9 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                      title="Ver participações"
+                    >
+                      <History size={16} className="text-[#1E1E1E]/60" />
+                    </button>
+
                     <button
                       onClick={() => navigate(`/admin/palestrantes/${convidado.id}/editar`)}
                       className="w-9 h-9 rounded-lg bg-green-50 hover:bg-green-100 flex items-center justify-center transition-colors"

@@ -72,10 +72,11 @@ export default function Login() {
 
         {/* Campo Usuário */}
         <div className="w-full flex flex-col gap-2">
-          <label className="text-white font-bold text-sm">Seu usuário:</label>
+          <label htmlFor="usuario" className="text-white font-bold text-sm">Seu usuário:</label>
           <div className="flex items-center gap-3 bg-white/90 rounded-full px-5 h-[52px]">
             <User size={20} className="text-[#6B6B6B] shrink-0" />
             <input
+              id="usuario"
               type="text"
               name="usuario"
               value={form.usuario}
@@ -88,10 +89,11 @@ export default function Login() {
 
         {/* Campo Senha */}
         <div className="w-full flex flex-col gap-2">
-          <label className="text-white font-bold text-sm">Sua senha:</label>
+          <label htmlFor="senha" className="text-white font-bold text-sm">Sua senha:</label>
           <div className="flex items-center gap-3 bg-white/90 rounded-full px-5 h-[52px]">
             <Lock size={20} className="text-[#6B6B6B] shrink-0" />
             <input
+              id="senha"
               type={showPassword ? "text" : "password"}
               name="senha"
               value={form.senha}

@@ -3,7 +3,7 @@ import Modal from "../../../../components/ui/Modal";
 
 export default function DeleteAdminModal({ isOpen, admin, onClose, onConfirm }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Confirmar exclusão de administrador">
       <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-xl max-w-sm w-full text-center">
         <div className="flex justify-center mb-5">
           <div className="w-16 h-16 rounded-full border-[3px] border-red-500 flex items-center justify-center">

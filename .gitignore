@@ -48,3 +48,8 @@ Thumbs.db
 coverage/
 coverage-reports/
 monocart-report/
+
+# Vercel e variáveis de ambiente locais
+.vercel
+.env*
+!.env.example

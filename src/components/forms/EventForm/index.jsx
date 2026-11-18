@@ -146,8 +146,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         {/* Nome */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
+          <label htmlFor="title" className="block text-sm font-bold text-[#1E1E1E] mb-2">Nome</label>
           <input
+            id="title"
             type="text"
             name="title"
             value={form.title}
@@ -162,8 +163,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         {/* Tipo de evento */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Tipo de evento</label>
+          <label htmlFor="tipoEvento" className="block text-sm font-bold text-[#1E1E1E] mb-2">Tipo de evento</label>
           <select
+            id="tipoEvento"
             name="tipoEvento"
             value={form.tipoEvento}
             onChange={handleChange}
@@ -185,8 +187,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         {/* Descrição */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Descrição</label>
+          <label htmlFor="description" className="block text-sm font-bold text-[#1E1E1E] mb-2">Descrição</label>
           <textarea
+            id="description"
             name="description"
             value={form.description}
             onChange={handleChange}
@@ -201,11 +204,12 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         {/* Vagas + Contato do responsável (RF11) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-1">
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+            <label htmlFor="vagas" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
               <Ticket size={16} className="text-[#FF6D2C]" />
               Quantidade de vagas
             </label>
             <input
+              id="vagas"
               type="number"
               name="vagas"
               min="0"
@@ -216,11 +220,12 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
             />
           </div>
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+            <label htmlFor="contatoResponsavel" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
               <Phone size={16} className="text-[#FF6D2C]" />
               Contato do responsável
             </label>
             <input
+              id="contatoResponsavel"
               type="text"
               name="contatoResponsavel"
               value={form.contatoResponsavel}
@@ -236,11 +241,12 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         {/* Valor/Investimento + Link de pagamento (RF11) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-1">
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+            <label htmlFor="valorInvestimento" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
               <DollarSign size={16} className="text-[#FF6D2C]" />
               Valor / Investimento
             </label>
             <input
+              id="valorInvestimento"
               type="text"
               name="valorInvestimento"
               value={form.valorInvestimento}
@@ -250,11 +256,12 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
             />
           </div>
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+            <label htmlFor="linkPagamento" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
               <Link2 size={16} className="text-[#FF6D2C]" />
               Link de pagamento
             </label>
             <input
+              id="linkPagamento"
               type="url"
               name="linkPagamento"
               value={form.linkPagamento}
@@ -377,12 +384,13 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
           {dateMode === "periodo" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+                <label htmlFor="startDay" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
                   <CalendarDays size={16} className="text-[#FF6D2C]" />
                   Início
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="startDay"
                     type="date"
                     name="startDay"
                     value={form.startDay}
@@ -392,6 +400,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                   />
                   <TimeInput
                     name="startTime"
+                    aria-label="Horário de início"
                     value={form.startTime}
                     onChange={handleChange}
                     className={dateTimeBase}
@@ -401,12 +410,13 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                 </div>
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+                <label htmlFor="endDay" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
                   <CalendarDays size={16} className="text-[#FF6D2C]" />
                   Término
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="endDay"
                     type="date"
                     name="endDay"
                     value={form.endDay}
@@ -416,6 +426,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                   />
                   <TimeInput
                     name="endTime"
+                    aria-label="Horário de término"
                     value={form.endTime}
                     onChange={handleChange}
                     className={dateTimeBase}
@@ -474,6 +485,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                   </label>
                   <TimeInput
                     name="startTime"
+                    aria-label="Horário de início"
                     value={form.startTime}
                     onChange={handleChange}
                     className={`${dateTimeBase} w-full`}
@@ -486,6 +498,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                   </label>
                   <TimeInput
                     name="endTime"
+                    aria-label="Horário de término"
                     value={form.endTime}
                     onChange={handleChange}
                     className={`${dateTimeBase} w-full`}
@@ -508,6 +521,9 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         {/* Palestrantes/convidados — selecionados via ConvidadosPicker */}
         <ConvidadosPicker
           eventId={eventId}
+          /* US13: numa duplicação não há `eventId` ainda, mas os convidados do
+             evento de origem servem de ponto de partida. */
+          preCarregarDe={initialData.copiarConvidadosDe}
           selecionados={convidadosIds ?? []}
           onChange={setConvidadosIds}
         />
@@ -568,9 +584,10 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         {/* Imagem de capa (URL do Drive) */}
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Imagem de Capa</label>
+          <label htmlFor="image" className="block text-sm font-bold text-[#1E1E1E] mb-2">Imagem de Capa</label>
           <div className="relative">
             <input
+              id="image"
               type="url"
               name="image"
               value={form.image}
@@ -599,9 +616,10 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
         <hr className="my-5 border-gray-100" />
 
         <div className="mb-1">
-          <label className="block text-sm font-bold text-[#1E1E1E] mb-2">Galeria de Fotos</label>
+          <label htmlFor="linkGaleria" className="block text-sm font-bold text-[#1E1E1E] mb-2">Galeria de Fotos</label>
           <div className="relative">
             <input
+              id="linkGaleria"
               type="text"
               name="linkGaleria"
               value={form.linkGaleria}
@@ -620,11 +638,12 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
 
         {/* Regulamento (RF11) — mesmo padrão de link usado na capa e na galeria */}
         <div className="mb-1">
-          <label className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
+          <label htmlFor="linkRegulamento" className="flex items-center gap-2 text-sm font-bold text-[#1E1E1E] mb-2">
             <FileText size={16} className="text-[#FF6D2C]" />
             Regulamento (PDF)
           </label>
           <input
+            id="linkRegulamento"
             type="url"
             name="linkRegulamento"
             value={form.linkRegulamento}

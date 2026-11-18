@@ -8,7 +8,7 @@ const INPUT =
   "w-full border border-gray-300 rounded-lg px-4 py-3 bg-[#FFF8F3] text-sm text-[#1E1E1E] placeholder-[#1E1E1E]/40 focus:border-[#FF6D2C] focus:ring-2 focus:ring-[#FF6D2C]/20 transition-all";
 const LABEL = "block text-sm font-bold text-[#1E1E1E] mb-2";
 
-export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "Salvar" }) {
+export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "Salvar", error = null }) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -77,8 +77,10 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
             <div className="relative mt-3">
               <input
+                id="image"
                 type="url"
                 name="image"
+                aria-label="Link da foto do diretor ou líder"
                 value={form.image}
                 onChange={handleChange}
                 placeholder="Cole o link da foto (Google Drive)"
@@ -94,8 +96,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
           {/* Dados */}
           <div className="space-y-5">
             <div>
-              <label className={LABEL}>Nome</label>
+              <label htmlFor="name" className={LABEL}>Nome</label>
               <input
+                id="name"
                 type="text"
                 name="name"
                 value={form.name}
@@ -107,8 +110,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
 
             <div>
-              <label className={LABEL}>Cargo</label>
+              <label htmlFor="role" className={LABEL}>Cargo</label>
               <input
+                id="role"
                 type="text"
                 name="role"
                 value={form.role}
@@ -121,8 +125,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
 
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
               <div>
-                <label className={LABEL}>Região</label>
+                <label htmlFor="region" className={LABEL}>Região</label>
                 <select
+                  id="region"
                   name="region"
                   value={form.region}
                   onChange={handleChange}
@@ -135,8 +140,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
                 </select>
               </div>
               <div>
-                <label className={LABEL}>Ordem de exibição</label>
+                <label htmlFor="order" className={LABEL}>Ordem de exibição</label>
                 <input
+                  id="order"
                   type="number"
                   name="order"
                   min={0}
@@ -148,8 +154,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             </div>
 
             <div>
-              <label className={LABEL}>Redes Sociais</label>
+              <label htmlFor="socialLinks" className={LABEL}>Redes Sociais</label>
               <input
+                id="socialLinks"
                 type="text"
                 name="socialLinks"
                 value={form.socialLinks}
@@ -186,8 +193,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
             {form.isPast && (
               <div className="animate-fade-in space-y-3">
                 <div>
-                  <label className={LABEL}>Período de gestão</label>
+                  <label htmlFor="term" className={LABEL}>Período de gestão</label>
                   <input
+                    id="term"
                     type="text"
                     name="term"
                     value={form.term}
@@ -211,8 +219,9 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
 
         {/* Mini-biografia */}
         <div>
-          <label className={LABEL}>Mini-Biografia</label>
+          <label htmlFor="bio" className={LABEL}>Mini-Biografia</label>
           <textarea
+            id="bio"
             name="bio"
             value={form.bio}
             onChange={handleChange}
@@ -223,6 +232,20 @@ export default function LeaderForm({ initialData = {}, onSubmit, submitLabel = "
         </div>
 
         <hr className="my-6 border-gray-100" />
+
+        {/* Recusa do servidor — em especial o cargo já ocupado (US10, CA8).
+            Fica junto dos botões, com o formulário preenchido: a correção é
+            trocar o cargo ou marcar o antecessor como diretor anterior, e um
+            alerta que some apagaria o que a pessoa acabou de digitar. */}
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl px-4 py-3"
+          >
+            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Botões */}
         <div className="flex justify-end gap-3">

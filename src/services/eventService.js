@@ -25,6 +25,7 @@ export function parseEventId(slugOrId) {
 
 import {
   dateSortKey,
+  formatDate,
   normalizeEventDays,
   formatTime,
   formatTimeRange,
@@ -99,6 +100,44 @@ export function toFormResponseUrl(url) {
   return result;
 }
 
+/* Situação do evento (US14).
+
+   O evento cancelado ou adiado **continua aparecendo** no site: nada é
+   apagado, e esconder o evento tiraria do visitante justamente o aviso que a
+   história quer dar. O que muda é que o aviso aparece e a inscrição some. */
+export const SITUACAO = {
+  ATIVO: "ativo",
+  CANCELADO: "cancelado",
+  ADIADO: "adiado",
+};
+
+export function eventoCancelado(event) {
+  return event?.situacao === SITUACAO.CANCELADO;
+}
+
+export function eventoAdiado(event) {
+  return event?.situacao === SITUACAO.ADIADO;
+}
+
+/* CA4: os botões de inscrição ficam ocultos enquanto durar a situação. Só o
+   evento ativo os mostra — qualquer valor inesperado vindo da API é tratado
+   como "não ativo", porque prometer inscrição em evento cancelado é pior que
+   escondê-la à toa. */
+export function mostrarInscricao(event) {
+  return event?.situacao === SITUACAO.ATIVO;
+}
+
+/* Texto do aviso exibido na agenda, no calendário, na home e na página do
+   evento (CA2). Devolve null quando o evento está ativo e não há o que avisar. */
+export function avisoDeSituacao(event) {
+  if (eventoCancelado(event)) return "Evento cancelado";
+  if (eventoAdiado(event)) {
+    const nova = formatDate(event?.novaData);
+    return nova ? `Adiado para ${nova}` : "Evento adiado — nova data em breve";
+  }
+  return null;
+}
+
 function adaptEvent(apiEvent) {
   if (!apiEvent) return null;
   const modalidade = apiEvent.modalidade === "online" ? "online" : "presencial";
@@ -129,8 +168,29 @@ function adaptEvent(apiEvent) {
        em `toApiEvent`. */
     linkFormularioParticipantes: apiEvent.formulario_participante_link || "",
     linkFormularioVoluntarios: apiEvent.formulario_link || "",
+    /* Situação do evento (US14): "ativo", "cancelado" ou "adiado". O
+       back-end sempre envia o campo, e evento antigo chega como "ativo" —
+       mas o `||` cobre uma resposta antiga em cache, para que a ausência do
+       campo nunca esconda os botões de inscrição. */
+    situacao: apiEvent.situacao || SITUACAO.ATIVO,
+    /* Só existe no adiado, e só depois que a nova data é definida. */
+    novaData: apiEvent.nova_data || null,
     calendarioEventoId: apiEvent.calendario_evento_id || null,
     tipoEvento: apiEvent.tipo_evento || "",
+    /* Campos da US02. O formulário já os coletava, mas eles não eram nem
+       enviados nem lidos: a pessoa digitava, salvava e o dado sumia sem aviso.
+
+       ATENÇÃO — os nomes abaixo são os que o front **assume**; o back-end
+       ainda não tem as colunas. Enquanto não tiver, a API ignora o campo
+       desconhecido (os schemas não usam extra="forbid") e estas linhas ficam
+       inertes, sem quebrar nada. No dia em que as colunas existirem, conferir
+       os nomes aqui antes de dar por integrado — na US09 três nomes assumidos
+       estavam errados. É o único lugar a mudar. */
+    vagas: apiEvent.vagas ?? "",
+    contatoResponsavel: apiEvent.contato_responsavel || "",
+    valorInvestimento: apiEvent.valor_investimento || "",
+    linkPagamento: apiEvent.link_pagamento || "",
+    linkRegulamento: apiEvent.link_regulamento || "",
     linkImagem: apiEvent.link_imagem || "",
     image: toDriveImageUrl(apiEvent.link_imagem) || DEFAULT_EVENT_IMAGE,
     category: apiEvent.tipo_evento || "Outros",
@@ -168,6 +228,16 @@ function toApiEvent(form) {
     formulario_link: form.linkFormularioVoluntarios || null,
     formulario_participante_link: form.linkFormularioParticipantes || null,
     link_imagem: (form.image && form.image.trim()) || null,
+    /* US02 — ver a nota em `adaptEvent`. Enviados mesmo sem coluna
+       correspondente: campo desconhecido é ignorado pela API, então nada
+       quebra, e o dia em que o back-end os guardar nada mais precisa mudar
+       aqui. Número vazio vai como null, e não como "", para não gravar texto
+       numa coluna numérica. */
+    vagas: form.vagas === "" || form.vagas == null ? null : Number(form.vagas),
+    contato_responsavel: form.contatoResponsavel?.trim() || null,
+    valor_investimento: form.valorInvestimento?.trim() || null,
+    link_pagamento: form.linkPagamento?.trim() || null,
+    link_regulamento: form.linkRegulamento?.trim() || null,
   };
 }
 
@@ -360,6 +430,46 @@ function validateEventLocation(data) {
   return null;
 }
 
+/* Dados de um evento novo a partir de um existente (US13, RF09).
+
+   Duplicar serve a quem repete o mesmo evento em outra edição: a conferência
+   do ano que vem, o acampamento do próximo semestre. O que descreve o evento
+   é copiado; o que pertence **àquela edição** não é, porque herdar isso cria
+   erro silencioso:
+
+   · **datas** — herdar a data antiga nasceria um evento no passado;
+   · **situação** (US14) — a cópia nasce ativa, mesmo que o original tenha
+     sido cancelado ou adiado;
+   · **galeria** — o link aponta para a pasta de fotos do evento original, e a
+     cópia exibiria as fotos da edição anterior como se fossem suas;
+   · **formulários de inscrição e link de pagamento** — cada edição recebe os
+     próprios inscritos; reaproveitar o link misturaria as duas listas.
+
+   O nome ganha "(cópia)" para que duas edições não fiquem indistinguíveis na
+   agenda enquanto a pessoa ainda não ajustou o título.
+
+   `copiarConvidadosDe` carrega os convidados do original no seletor: a mesma
+   edição costuma repetir boa parte deles, e removê-los é mais rápido do que
+   procurá-los um a um. */
+export function duplicarEvento(evento) {
+  if (!evento) return null;
+
+  return {
+    title: `${evento.title || "Evento"} (cópia)`,
+    tipoEvento: evento.tipoEvento || "",
+    description: evento.description || "",
+    modalidade: evento.modalidade === "online" ? "online" : "presencial",
+    linkTransmissao: evento.linkTransmissao || "",
+    latitude: evento.latitude ?? "",
+    longitude: evento.longitude ?? "",
+    location: evento.location || "",
+    /* A arte de capa costuma valer para a edição seguinte; se não valer, é um
+       campo só para trocar. */
+    linkImagem: evento.linkImagem || "",
+    copiarConvidadosDe: evento.id,
+  };
+}
+
 export async function handleCreateEvent(data) {
   if (!data.title || !data.title.trim()) {
     return { success: false, error: "Nome do evento é obrigatório." };
@@ -411,6 +521,40 @@ export async function handleUpdateEvent(slugOrId, data) {
   }
 }
 
+/* Marca o evento como cancelado ou adiado, ou desfaz a marcação (US14).
+
+   O corpo é pequeno de propósito: não é preciso reenviar o evento inteiro, e
+   por isso marcar não corre o risco de sobrescrever um campo que outra pessoa
+   acabou de editar. Voltar para "ativo" desfaz a marcação; `nova_data` só vale
+   no adiado, e o servidor a zera nas demais situações. */
+export async function handleAlterarSituacaoEvento(slugOrId, situacao, novaData = null) {
+  if (!Object.values(SITUACAO).includes(situacao)) {
+    return { success: false, error: "Situação inválida." };
+  }
+
+  const id = parseEventId(slugOrId);
+  const toIso = (v) => (v ? `${v}:00`.slice(0, 19) : null);
+
+  try {
+    const { data } = await api.patch(`/evento/${id}/situacao`, {
+      situacao,
+      nova_data: situacao === SITUACAO.ADIADO ? toIso(novaData) : null,
+    });
+    return { success: true, event: adaptEvent(data), error: null };
+  } catch (error) {
+    if (error?.response?.status === 403) {
+      return {
+        success: false,
+        error: "Apenas o setor de eventos ou a superadministradora podem alterar a situação do evento.",
+      };
+    }
+    return {
+      success: false,
+      error: getErrorMessage(error, "Não foi possível alterar a situação do evento."),
+    };
+  }
+}
+
 /* US20 (A1): o que será apagado junto com o evento, para a confirmação.
    Devolve `null` se a contagem não puder ser lida — o modal avisa e a
    exclusão continua possível. */
@@ -458,6 +602,9 @@ export async function fetchEventGallery(eventId) {
       id: foto.id,
       nome: foto.nome,
       url: foto.url_visualizacao,
+      /* Pronto pelo back-end (US11): o botão "Baixar" só o coloca no href,
+         e o arquivo sai com o nome original, sem pedir login. */
+      downloadUrl: foto.url_download || "",
     }));
   } catch {
     return [];
@@ -545,6 +692,8 @@ export async function fetchAggregatedGallery() {
       return fotos.map((foto) => ({
         id: foto.id,
         image: foto.url,
+        downloadUrl: foto.downloadUrl,
+        nome: foto.nome,
         event: ev.title,
         location: ev.location || "",
       }));

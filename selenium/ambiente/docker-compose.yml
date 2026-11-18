@@ -1,0 +1,55 @@
+# Ambiente dos testes funcionais com Selenium: banco, Keycloak e back-end
+# reais, sem credenciais do Google (a agenda e o Drive ficam desligados, como
+# o próprio back-end prevê quando não há GOOGLE_REFRESH_TOKEN).
+#
+# O back-end é construído a partir do repositório IDB_Jovem-Backend, que deve
+# estar ao lado deste (ou em BACKEND_DIR). Nada aqui lê ou altera o .env de
+# quem desenvolve: tudo vem das variáveis abaixo, e o banco é descartado ao
+# final (tmpfs).
+name: idb-selenium
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: selenium
+      POSTGRES_PASSWORD: selenium
+      POSTGRES_DB: idb
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U selenium -d idb"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      JAVA_OPTS_APPEND: "-Xms128m -Xmx512m"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${BACKEND_DIR:-../../../IDB_Jovem-Backend}/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+
+  backend:
+    build: ${BACKEND_DIR:-../../../IDB_Jovem-Backend}
+    command: sh -c "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: postgresql://selenium:selenium@db:5432/idb
+      KEYCLOAK_REALM: jovem
+      KEYCLOAK_CLIENT_ID: jovem-backend
+      # O navegador obtém o token por localhost:8080; o back-end busca as
+      # chaves pela rede interna do Docker.
+      KEYCLOAK_ISSUER: http://localhost:8080/realms/jovem
+      KEYCLOAK_JWKS_URL: http://keycloak:8080/realms/jovem/protocol/openid-connect/certs
+      CORS_ORIGINS: http://localhost:5173
+      BASE_URL: http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy

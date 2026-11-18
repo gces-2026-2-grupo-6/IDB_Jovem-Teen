@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { Eye, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Eye, MapPin, Pencil, Trash2, Copy } from "lucide-react";
 import {
   extractDayMonth,
   isMultiDay,
   isNonConsecutive,
   eventDayKeys,
 } from "../../../../services/eventService";
+import { EventStatusBadge } from "../../../../components/ui/EventStatusNotice";
 
 /* Caixa de data da linha. Evento de um dia mantém dia grande + mês; evento de
    vários dias mostra a faixa, e quando ela atravessa a virada do mês os dois
@@ -64,14 +65,23 @@ function DateBox({ event, muted = false }) {
   );
 }
 
-export function UpcomingEventRow({ event, onEdit, onDelete }) {
+export function UpcomingEventRow({ event, onEdit, onDuplicate, onDelete }) {
   return (
     <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 group hover:bg-gray-50/50 px-2 rounded-lg transition-colors">
       <DateBox event={event} />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-[#1E1E1E] truncate">{event.title}</p>
+        {/* `flex-wrap`: na largura do celular sobram ~88px para esta coluna, e
+            o selo (~82px, `shrink-0`) espremia o título até largura zero — o
+            nome do evento sumia da lista assim que ele era marcado. Deixando
+            quebrar, o título fica com a linha inteira e o selo desce. */}
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <p className="font-semibold text-sm text-[#1E1E1E] truncate max-w-full">{event.title}</p>
+          {/* A administradora precisa ver de relance o que já está marcado,
+              sem abrir cada evento (US14). */}
+          <EventStatusBadge event={event} className="shrink-0" />
+        </div>
         <span className="flex items-center gap-1 text-xs text-[#1E1E1E]/50 mt-0.5">
           <MapPin size={11} />
           {event.location}
@@ -97,6 +107,16 @@ export function UpcomingEventRow({ event, onEdit, onDelete }) {
         >
           <Pencil size={16} className="text-green-600 group-hover/btn:scale-110 transition-transform" />
         </button>
+        {/* US13: repetir um evento em outra edição sem redigitar tudo. */}
+        {onDuplicate && (
+          <button
+            onClick={() => onDuplicate(event)}
+            className="w-9 h-9 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors group/btn"
+            title="Duplicar"
+          >
+            <Copy size={16} className="text-[#1E1E1E]/60 group-hover/btn:scale-110 transition-transform" />
+          </button>
+        )}
         {/* Excluir é restrito ao superadministrador: sem handler, sem botão. */}
         {onDelete && (
           <button
@@ -113,7 +133,7 @@ export function UpcomingEventRow({ event, onEdit, onDelete }) {
 }
 
 /* Eventos Anteriores */
-export function PastEventRow({ event }) {
+export function PastEventRow({ event, onDuplicate }) {
   return (
     <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 group hover:bg-gray-50/50 px-2 rounded-lg transition-colors">
       {/* Data */}
@@ -142,6 +162,17 @@ export function PastEventRow({ event }) {
         >
           Voluntários
         </Link>
+        {/* O evento encerrado é o caso mais comum de duplicação: a edição do
+            ano seguinte parte dele. */}
+        {onDuplicate && (
+          <button
+            onClick={() => onDuplicate(event)}
+            className="text-[11px] font-bold border border-[#1E1E1E]/20 text-[#1E1E1E]/70 px-4 py-1.5 rounded-md hover:border-[#FF6D2C] hover:text-[#FF6D2C] transition-colors text-center"
+            title="Duplicar"
+          >
+            Duplicar
+          </button>
+        )}
       </div>
     </div>
   );
