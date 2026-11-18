@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, CalendarDays, Users, Mic, ShoppingCart, UsersRound, ShieldCheck, FolderDown, LogOut, X, BookOpen } from "lucide-react";
+import { Home, CalendarDays, Users, Mic, ShoppingCart, ClipboardList, UsersRound, ShieldCheck, FolderDown, LogOut, X, BookOpen } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import usePermissao from "../../../hooks/usePermissao";
 import { SETOR } from "../../../utils/permissoes";
@@ -13,6 +13,8 @@ const sidebarLinks = [
   { label: "Convidados", path: "/admin/palestrantes", icon: Mic, setor: SETOR.EVENTOS },
   { label: "Voluntários", path: "/admin/voluntarios", icon: Users, setor: SETOR.INSCRICOES },
   { label: "Produtos", path: "/admin/produtos", icon: ShoppingCart, setor: SETOR.PRODUTOS },
+  /* US21: pedidos de produto, mesmo setor da loja. */
+  { label: "Pedidos", path: "/admin/pedidos", icon: ClipboardList, setor: SETOR.PRODUTOS },
   /* Vindo da US05: a galeria de diretores é restrita ao superadministrador,
      então usa o mesmo sinalizador dos demais itens exclusivos. */
   {
