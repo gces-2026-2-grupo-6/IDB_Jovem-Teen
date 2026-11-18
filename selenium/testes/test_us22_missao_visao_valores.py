@@ -1,8 +1,9 @@
 """US22 — Missão, visão e valores.
 
-O front está pronto; o back-end ainda não tem GET/PUT /institucional. O teste
-de ponta a ponta fica registrado como falha esperada (xfail estrito): quando a
-rota entrar, ele passa e o pytest acusa, para o marcador ser removido.
+Front e back-end integrados: o back-end expõe GET/PUT /institucional, e o
+conteúdo salvo no painel aparece na página pública. O que antes era falha
+esperada (xfail estrito, até a rota entrar) agora é verificação de ponta a
+ponta.
 """
 
 import pytest
@@ -10,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
 from apoio import (
-    FRONT_URL, MISSAO_PUBLICADA, abrir, clicar, contem, entrar, esperar,
+    FRONT_URL, MISSAO_PUBLICADA, abrir, clicar, entrar, esperar,
     existe, marca, preencher, texto, visivel,
 )
 
@@ -49,16 +50,6 @@ def test_tela_do_painel_so_aparece_para_a_superadmin(navegador):
     esperar(navegador, EC.url_contains("/unauthorized"))
 
 
-def test_salvar_sem_rota_no_servidor_avisa_em_vez_de_quebrar(navegador):
-    entrar(navegador)
-    abrir(navegador, "/admin/institucional")
-    visivel(navegador, f"//*[{contem('Ainda não há conteúdo salvo.')}]")
-    clicar(navegador, "//button[normalize-space()='Salvar']")
-    aviso = visivel(navegador, "//*[@role='alert']")
-    assert aviso.text == "O servidor ainda não oferece o cadastro deste conteúdo."
-
-
-@pytest.mark.xfail(strict=True, reason="Back-end ainda não implementa GET/PUT /institucional (US22).")
 def test_conteudo_salvo_no_painel_aparece_na_pagina_publica(navegador):
     visao = f"{marca()} Ser referência para a juventude."
     entrar(navegador)

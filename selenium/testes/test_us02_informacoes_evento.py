@@ -1,10 +1,11 @@
 """US02 — Informações completas do evento (vagas, contato, valor, link de
 pagamento e regulamento).
 
-Bug encontrado: o formulário do painel tem os cinco campos desde a Sprint 1,
-mas eles não são enviados à API e o back-end não tem as colunas. A
-administradora preenche, salva, e os dados somem. Registrado como falha
-esperada (xfail estrito) até a correção.
+O defeito que isto guardava — os cinco campos existiam no formulário desde a
+Sprint 1, mas não eram enviados à API e o back-end não tinha as colunas, então
+a administradora preenchia, salvava e os dados sumiam — foi corrigido (front e
+back-end integrados na Sprint 4). O que era falha esperada (xfail estrito)
+agora é regressão: o evento reaberto mantém o que foi preenchido.
 """
 
 import re
@@ -38,7 +39,6 @@ def test_formulario_oferece_os_cinco_campos(navegador):
         assert navegador.find_elements(By.NAME, nome), nome
 
 
-@pytest.mark.xfail(strict=True, reason="Bug: os campos da US02 não são enviados à API nem gravados no back-end.")
 def test_campos_preenchidos_continuam_salvos_ao_reabrir_o_evento(navegador, api):
     entrar(navegador)
     abrir(navegador, "/admin/eventos/criar")
