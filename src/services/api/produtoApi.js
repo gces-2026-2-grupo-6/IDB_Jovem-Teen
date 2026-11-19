@@ -7,6 +7,7 @@ import { api } from "../api";
  * @property {string} descricao
  * @property {string} link_produto
  * @property {string} link_imagem - link de compartilhar do Drive (cru)
+ * @property {string} [formulario_pedido_link] - formulário do Google que recebe os pedidos (US21)
  */
 
 /**

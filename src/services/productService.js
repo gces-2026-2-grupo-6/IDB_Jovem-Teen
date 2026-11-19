@@ -18,6 +18,9 @@ function toProduct(api) {
     // image = URL renderável (p/ exibir); imageRaw = link cru do Drive (p/ o form)
     image: toDriveImageUrl(api.link_imagem),
     imageRaw: api.link_imagem ?? "",
+    // US21: formulário do Google onde o visitante registra o pedido/interesse.
+    // Sem este link, a sincronização de pedidos não tem o que ler.
+    formularioPedidoLink: api.formulario_pedido_link ?? "",
   };
 }
 
@@ -27,6 +30,8 @@ function toProdutoPayload(form) {
     descricao: form.description ?? "",
     link_produto: form.link || "",
     link_imagem: form.image || "",
+    // US21: enviado de volta para que o produto guarde o formulário de pedido.
+    formulario_pedido_link: form.formularioPedidoLink || "",
   };
 }
 
