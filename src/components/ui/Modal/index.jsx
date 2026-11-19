@@ -71,19 +71,29 @@ export default function Modal({ isOpen, onClose, children, ariaLabel = "Diálogo
         return;
       }
 
-      const primeiro = focalizaveis[0];
-      const ultimo = focalizaveis[focalizaveis.length - 1];
-      const atual = document.activeElement;
+      /* O Tab é conduzido aqui do começo ao fim, em vez de só nas pontas da
+         lista.
 
-      /* Circular: do último o Tab volta ao primeiro, e do primeiro o
-         Shift+Tab vai ao último. É o que mantém o foco dentro. */
-      if (e.shiftKey && (atual === primeiro || !caixa.contains(atual))) {
-        e.preventDefault();
-        ultimo.focus();
-      } else if (!e.shiftKey && (atual === ultimo || !caixa.contains(atual))) {
-        e.preventDefault();
-        primeiro.focus();
-      }
+         Antes, no meio da lista, a navegação era deixada para o navegador —
+         o que funciona no Chromium mas não no WebKit, que inclui o <body> na
+         ordem de tabulação: o foco saía do diálogo por um passo antes de
+         voltar. Decidindo o próximo elemento aqui, o foco fica preso em
+         qualquer motor. */
+      const atual = document.activeElement;
+      const posicao = focalizaveis.indexOf(atual);
+      const passo = e.shiftKey ? -1 : 1;
+
+      /* Foco fora da lista (o <body>, por exemplo): entra pela ponta que faz
+         sentido para a direção. */
+      const proximo =
+        posicao === -1
+          ? e.shiftKey
+            ? focalizaveis.length - 1
+            : 0
+          : (posicao + passo + focalizaveis.length) % focalizaveis.length;
+
+      e.preventDefault();
+      focalizaveis[proximo].focus();
     };
 
     window.addEventListener("keydown", aoTeclar);
