@@ -20,6 +20,7 @@ Rodar depois de cada deploy:
     pytest testes/test_producao.py -v
 """
 
+from datetime import datetime, timezone
 import html
 import json
 import os
@@ -123,16 +124,29 @@ def test_migracoes_da_sprint3_chegaram_ao_banco():
 def test_eventos_chegam_da_api_ate_a_tela(navegador):
     """Front, API e banco conversando, sem nada simulado no meio.
 
-    O teste só é válido se houver evento cadastrado — por isso pergunta à API
-    antes e se declara inconclusivo quando não há dado, em vez de passar por
-    engano com a tela vazia.
+    O teste só é válido se houver evento ativo ou futuro cadastrado — por isso
+    pergunta à API antes e se declara inconclusivo quando todos os eventos
+    já encerraram, em vez de falhar com a tela filtrada.
     """
     resposta = requests.get(f"{API_URL}/evento/", timeout=TEMPO_LIMITE)
     assert resposta.status_code == 200
     dados = resposta.json()
     eventos = dados if isinstance(dados, list) else dados.get("items", [])
-    if not eventos:
-        pytest.skip("nenhum evento cadastrado em produção; nada a conferir na tela")
+
+    agora = datetime.now(timezone.utc)
+
+    def nao_encerrado(evento):
+        limite = evento.get("data_fim") or evento.get("data_inicio")
+        if not limite:
+            return True
+        dt = datetime.fromisoformat(str(limite).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt >= agora
+
+    eventos_visiveis = [e for e in eventos if nao_encerrado(e)]
+    if not eventos_visiveis:
+        pytest.skip("nenhum evento ativo ou futuro em produção; nada a conferir na tela")
 
     abrir(navegador, "/eventos")
     WebDriverWait(navegador, 30).until(
@@ -140,11 +154,11 @@ def test_eventos_chegam_da_api_ate_a_tela(navegador):
     )
     tela = navegador.find_element(By.TAG_NAME, "body").text
 
-    nomes = [e.get("nome") or e.get("titulo") or "" for e in eventos]
+    nomes = [e.get("nome") or e.get("titulo") or "" for e in eventos_visiveis]
     nomes = [nome for nome in nomes if nome]
-    assert nomes, f"a API devolveu evento sem nome reconhecível: {eventos[:1]}"
+    assert nomes, f"a API devolveu evento sem nome reconhecível: {eventos_visiveis[:1]}"
     assert any(nome[:20] in tela for nome in nomes), (
-        "a API tem eventos, mas nenhum apareceu na tela"
+        "a API tem eventos ativos, mas nenhum apareceu na tela"
     )
 
 
