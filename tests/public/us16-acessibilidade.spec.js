@@ -115,13 +115,34 @@ test.describe('US16 - Diálogo modal', () => {
     }
   });
 
-  test('Esc fecha e o foco volta para quem abriu', async ({ page }) => {
-    await page.keyboard.press('Escape');
+  test('Esc fecha e o foco volta para quem o tinha antes', async ({ page }) => {
+    /* O contrato é devolver o foco a quem o tinha antes de abrir — e não
+       presumir que era o botão.
 
+       Chromium foca um botão ao ser clicado; o WebKit não, por convenção do
+       macOS. Então, abrindo com o mouse, o "antes" é o botão num e o <body>
+       no outro, e os dois estão certos. Quem navega por teclado aciona o
+       botão com Enter, aí ele tem o foco em qualquer motor — que é o caso
+       em que a devolução importa. */
+    /* O beforeEach já abriu um diálogo; este teste precisa do estado
+       anterior à abertura, então fecha e recomeça registrando o foco. */
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    /* O foco volta ao botão de excluir, e não ao topo da página. */
-    const texto = await page.evaluate(() => document.activeElement?.textContent?.trim());
-    expect(texto).toBe('Excluir');
+    const antes = await page.evaluate(() => {
+      window.__focoAntesDoDialogo = document.activeElement;
+      return document.activeElement?.tagName;
+    });
+
+    await page.getByRole('button', { name: 'Excluir' }).first().click();
+    await page.getByRole('dialog').waitFor();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    const voltouAoMesmo = await page.evaluate(
+      () => document.activeElement === window.__focoAntesDoDialogo
+    );
+    expect(voltouAoMesmo, `o foco deveria voltar ao ${antes} que o tinha antes`).toBe(true);
   });
 });
