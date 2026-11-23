@@ -6,6 +6,7 @@ import Loading from "../../../../components/ui/Loading";
 import EmptyState from "../../../../components/ui/EmptyState";
 import { StatCard } from "../../../../components/card/VolunteerCard";
 import LinkDoFluxo from "./LinkDoFluxo";
+import { mensagemDeErro } from "../../../../utils/mensagemDeErro";
 
 const COLUNAS = [
   { key: "name", label: "Nome", width: "1fr" },
@@ -33,8 +34,12 @@ export default function ParticipantesPanel({ event, eventId }) {
         if (!active) return;
         setParticipantes(lista);
         setError(null);
-      } catch {
-        if (active) setError("Não foi possível carregar as inscrições deste evento.");
+      } catch (erro) {
+        /* Mesma razão do painel de voluntários: a causa vem no corpo do 502. */
+        if (active)
+          setError(
+            mensagemDeErro(erro, "Não foi possível carregar as inscrições deste evento."),
+          );
       } finally {
         if (active) setLoading(false);
       }
