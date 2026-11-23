@@ -127,20 +127,13 @@ def test_painel_administrativo_exige_sessao(navegador):
     assert navegador.find_elements(By.CSS_SELECTOR, 'input[name="usuario"]')
 
 
-def test_rota_de_pedidos_exige_sessao(navegador):
-    """US21: a tela de pedidos do setor Produtos não é pública.
-
-    `/admin/pedidos` é a tela da US21 (CA1/CA2). Como qualquer rota do
-    painel, chegar nela sem sessão tem que devolver ao login — o visitante
-    que recebeu o link por engano não pode ver pedido de ninguém. O controle
-    que vale é o do servidor (o `GET /pedido/` exige o setor); aqui se
-    verifica que a rota existe e que a guarda do front não a deixa aberta.
-    """
-    montar(navegador, "/admin/pedidos")
-    WebDriverWait(navegador, 15).until(
-        lambda d: d.current_url.rstrip("/").endswith("/login")
-    )
-    assert navegador.find_elements(By.CSS_SELECTOR, 'input[name="usuario"]')
+# `test_rota_de_pedidos_exige_sessao` foi retirado em 23/11/2026. Ele afirmava
+# que `/admin/pedidos` devolvia ao login sem sessão; a rota saiu do front junto
+# com a tela da US21, a pedido da cliente na reunião de validação. Um teste que
+# afirma uma rota que não existe mais passa a falhar no CI — e é exatamente o
+# caso que já quebrou o pipeline três vezes nesta disciplina, com os `xfail`
+# que começaram a passar. A guarda do servidor (`GET /pedido/` exige o setor)
+# continua coberta pelos testes do back-end.
 
 
 def test_html_servido_declara_idioma_e_viewport(navegador):
