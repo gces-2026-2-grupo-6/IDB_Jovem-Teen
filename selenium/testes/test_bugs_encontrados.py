@@ -1,19 +1,25 @@
 """Defeitos encontrados pelos testes funcionais, fora das histórias do trio.
 
-Cada teste descreve o comportamento esperado e falha hoje (xfail estrito).
-Quando o defeito for corrigido, o pytest acusa XPASS e o marcador sai.
+Cada teste nasce descrevendo o comportamento esperado e falhando (xfail
+estrito). Quando o defeito é corrigido, o pytest acusa XPASS, o marcador sai e
+o teste fica como regressão — é o que aconteceu com o da US06.
 """
-
-import pytest
 
 from apoio import abrir, clicar, dias_a_partir_de_hoje, entrar, existe, marca, sumir, texto, visivel
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "Bug (US06, registrado pela QA na Sprint 2): excluir convidado vinculado a um evento "
-    "estoura IntegrityError no back-end; a requisição cai sem resposta e a tela mostra erro de rede."
-))
 def test_excluir_convidado_vinculado_nao_quebra_a_tela(navegador, api):
+    """Era xfail estrito até a PR #25 do back-end.
+
+    O defeito (US06, registrado pela QA na Sprint 2): excluir convidado
+    vinculado a um evento estourava IntegrityError, a requisição caía sem
+    resposta e a tela mostrava "Network Error". A PR #25 passou a responder
+    409 com mensagem, então o teste começou a passar — e `strict=True`
+    transforma XPASS em falha, derrubando o CI.
+
+    Sem o marcador, ele vira o que deveria ser agora: a regressão que impede
+    o defeito de voltar.
+    """
     tag = marca()
     evento = api.criar_evento(f"{tag} Evento", dias_a_partir_de_hoje(50))
     convidado = api.criar_convidado(f"{tag} Banda vinculada")
