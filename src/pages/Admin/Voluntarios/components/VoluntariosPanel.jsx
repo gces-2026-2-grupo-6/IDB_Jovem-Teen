@@ -11,6 +11,7 @@ import Loading from "../../../../components/ui/Loading";
 import EmptyState from "../../../../components/ui/EmptyState";
 import { StatCard } from "../../../../components/card/VolunteerCard";
 import LinkDoFluxo from "./LinkDoFluxo";
+import { mensagemDeErro } from "../../../../utils/mensagemDeErro";
 
 const COLUNAS = [
   { key: "name", label: "Nome", width: "1fr" },
@@ -40,8 +41,14 @@ export default function VoluntariosPanel({ event, eventId }) {
         setVolunteers(vols);
         setStats(computeVolunteerStats(vols));
         setError(null);
-      } catch {
-        if (active) setError("Não foi possível carregar as inscrições deste evento.");
+      } catch (erro) {
+        /* O 502 das rotas de formulário traz a causa escrita no corpo. Sem
+           mostrá-la, uma falha de integração com o Google é indistinguível de
+           "ninguém se inscreveu ainda". */
+        if (active)
+          setError(
+            mensagemDeErro(erro, "Não foi possível carregar as inscrições deste evento."),
+          );
       } finally {
         if (active) setLoading(false);
       }
