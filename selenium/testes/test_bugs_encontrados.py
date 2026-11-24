@@ -1,29 +1,13 @@
-"""Defeitos encontrados pelos testes funcionais, fora das histórias do trio.
-
-Cada teste nasce descrevendo o comportamento esperado e falhando (xfail
-estrito). Quando o defeito é corrigido, o pytest acusa XPASS, o marcador sai e
-o teste fica como regressão — é o que aconteceu com o da US06.
-"""
-
-import pytest
+"""Regressões identificadas pelos testes funcionais, fora das histórias do trio."""
 
 from apoio import abrir, clicar, dias_a_partir_de_hoje, entrar, existe, marca, texto
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "US06: o seletor procurava o nome do convidado em <p>, mas a RF51 trocou "
-    "para <Link> (<a>) em /admin/palestrantes. Validar execucao ponta a ponta "
-    "contra o back-end da PR #25 antes de remover o marcador."
-))
 def test_excluir_convidado_vinculado_nao_quebra_a_tela(navegador, api):
     """Regressao da US06: excluir convidado vinculado avisa em vez de quebrar.
 
-    Historico: nasceu xfail estrito porque excluir convidado vinculado
-    estourava IntegrityError no back-end e a tela mostrava "Network Error".
-    A PR #25 corrigiu o back-end para responder 409 com mensagem clara.
-
-    Na RF51 o nome do convidado na listagem virou link (<a>) para o historico
-    de participacoes, deixando o seletor antigo (//p[...]) desatualizado.
+    A API responde 409 para manter o convidado vinculado; a tela deve mostrar
+    a mensagem clara e continuar funcionando, sem "Network Error".
     """
     tag = marca()
     evento = api.criar_evento(f"{tag} Evento", dias_a_partir_de_hoje(50))
