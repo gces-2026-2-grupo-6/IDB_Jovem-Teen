@@ -555,7 +555,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                 name="linkFormularioParticipantes"
                 value={form.linkFormularioParticipantes}
                 onChange={handleChange}
-                placeholder="https://forms.gle/..."
+                placeholder="https://docs.google.com/forms/d/.../edit"
                 className={inputClass}
               />
             </div>
@@ -573,7 +573,7 @@ export default function EventForm({ initialData = {}, onSubmit, eventId }) {
                 name="linkFormularioVoluntarios"
                 value={form.linkFormularioVoluntarios}
                 onChange={handleChange}
-                placeholder="https://forms.gle/..."
+                placeholder="https://docs.google.com/forms/d/.../edit"
                 className={inputClass}
               />
             </div>
