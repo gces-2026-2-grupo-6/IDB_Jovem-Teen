@@ -10,13 +10,14 @@ biblioteca padrão, para rodar antes de instalar qualquer dependência.
 """
 
 import json
+import os
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
-KEYCLOAK = "http://localhost:8080"
+KEYCLOAK = os.environ.get("KEYCLOAK_URL", "http://localhost:8080").rstrip("/")
 REALM = "jovem"
 CLIENT_ID = "jovem-backend"
 ORIGEM_FRONT = "http://localhost:5173"
