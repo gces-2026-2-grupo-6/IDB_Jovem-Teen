@@ -1,4 +1,8 @@
-import { obterLinksPainel, atualizarLinksPainel } from "./api/painelApi";
+import {
+  obterLinksPainel,
+  obterLinkCadastroLideres,
+  atualizarLinksPainel,
+} from "./api/painelApi";
 
 /* Links fixados na página inicial do painel (US10).
 
@@ -23,6 +27,11 @@ export const CAMPOS_DE_LINK = {
 
 export async function fetchLinksPainel() {
   return toLinks(await obterLinksPainel());
+}
+
+export async function fetchLinkCadastroLideres() {
+  const data = await obterLinkCadastroLideres();
+  return data?.link_cadastro_lideres || "";
 }
 
 /* Valida antes de enviar o que o servidor recusaria com 422. O campo vazio é

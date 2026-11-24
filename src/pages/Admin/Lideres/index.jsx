@@ -8,6 +8,7 @@ import EmptyState from "../../../components/ui/EmptyState";
 import Loading from "../../../components/ui/Loading";
 import LeaderCard from "../../../components/card/LeaderCard";
 import DeleteLeaderModal from "./components/DeleteLeaderModal";
+import LinksLideresCard from "../Dashboard/components/LinksLideresCard";
 
 const TABS = [
   { key: "atuais", label: "Líderes atuais" },
@@ -111,6 +112,9 @@ export default function AdminLideres() {
           )}
         </div>
       </div>
+
+      {/* Link público de cadastro de líderes (US10) */}
+      <LinksLideresCard somente="cadastro" />
 
       {/* Abas */}
       <div className="space-y-2">

@@ -5,38 +5,57 @@ import { loginAsAdmin, loginComPapeis } from '../helpers/adminAuth';
 /* US10 — Cadastro nacional de líderes.
  *
  * O cadastro dos mais de 2500 líderes acontece fora do site: cada líder se
- * inscreve por um formulário externo e as respostas caem numa planilha. O
- * painel fixa os dois endereços e impede que dois líderes ativos ocupem o
- * mesmo cargo.
+ * inscreve pelo formulário externo exposto na área pública (Nosso Organograma)
+ * e as respostas caem numa planilha fixada na home do painel.
  *
  * No mock: o link de cadastro já está configurado; o da planilha, ainda não.
  */
 
 const CARD = 'Cadastro nacional de líderes';
 
-test.describe('US10 - Links fixados na página inicial do painel', () => {
-  test('CA1: a superadministradora vê o link de cadastro e pode abri-lo e copiá-lo', async ({ page, browserName }) => {
+test.describe('US10 - Link de cadastro na área pública e planilha no painel', () => {
+  test('área pública exibe o botão de cadastro de líderes sem exigir login', async ({ page }) => {
+    await setupApiMock(page);
+
+    await page.goto('/');
+
+    const botao = page.getByTestId('link-cadastro-lideres-publico');
+    await expect(botao).toBeVisible();
+    await expect(botao).toHaveText(/Cadastrar-se como líder/);
+    await expect(botao).toHaveAttribute('href', 'https://forms.gle/cadastro-lideres');
+    await expect(botao).toHaveAttribute('target', '_blank');
+  });
+
+  test('home do painel exibe apenas a planilha de respostas (sem o bloco de cadastro)', async ({ page }) => {
     await setupApiMock(page);
     await loginAsAdmin(page);
 
     await page.goto('/admin');
 
-    const card = page.getByTestId('link-cadastro');
     await expect(page.getByRole('heading', { name: CARD })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Planilha de respostas' })).toBeVisible();
+    await expect(page.getByTestId('link-cadastro')).toHaveCount(0);
+
+    /* Planilha ainda não configurada: o card oferece "Configurar" em vez de
+       sumir, senão não haveria por onde cadastrá-la pela primeira vez. */
+    const planilha = page.getByTestId('link-planilha');
+    await expect(planilha.getByRole('button', { name: 'Configurar' })).toBeVisible();
+  });
+
+  test('superadministradora gerencia o link público de cadastro em Diretores & Líderes', async ({ page, browserName }) => {
+    await setupApiMock(page);
+    await loginAsAdmin(page);
+
+    await page.goto('/admin/lideres');
+
+    const card = page.getByTestId('link-cadastro');
+    await expect(card).toBeVisible();
     await expect(card.getByText('https://forms.gle/cadastro-lideres')).toBeVisible();
 
-    /* Abrir: é um link de verdade, para a pessoa usar o menu do navegador. */
     const abrir = card.getByRole('link', { name: 'Abrir' });
     await expect(abrir).toHaveAttribute('href', 'https://forms.gle/cadastro-lideres');
     await expect(abrir).toHaveAttribute('target', '_blank');
 
-    /* Copiar: o endereço vai para a área de transferência, para divulgar.
-
-       O WebKit não conhece `clipboard-read`/`clipboard-write` e recusa o
-       `grantPermissions`. Sem a permissão não dá para ler o que foi copiado,
-       então ali a verificação para no retorno visual — que é o que a pessoa
-       de fato vê. O resto do critério continua coberto em todos os
-       navegadores. */
     const leClipboard = browserName !== 'webkit';
     if (leClipboard) {
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -51,22 +70,7 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
     }
   });
 
-  test('CA2: o link da planilha aparece separado do de cadastro', async ({ page }) => {
-    await setupApiMock(page);
-    await loginAsAdmin(page);
-
-    await page.goto('/admin');
-
-    await expect(page.getByRole('heading', { name: 'Link de cadastro de líderes' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Planilha de respostas' })).toBeVisible();
-
-    /* Planilha ainda não configurada: o card oferece "Configurar" em vez de
-       sumir, senão não haveria por onde cadastrá-la pela primeira vez. */
-    const planilha = page.getByTestId('link-planilha');
-    await expect(planilha.getByRole('button', { name: 'Configurar' })).toBeVisible();
-  });
-
-  test('CA3: o administrador de setor não vê nenhum dos dois links, e o site nem os pede', async ({ page }) => {
+  test('CA3: o administrador de setor não vê os links do painel, e o site nem os pede', async ({ page }) => {
     await setupApiMock(page);
     await loginComPapeis(page, ['admin', 'admin-eventos']);
 
@@ -84,7 +88,7 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
     expect(pedidos).toEqual([]);
   });
 
-  test('CA4: trocar um link não depende da equipe técnica nem apaga o outro', async ({ page }) => {
+  test('CA4: configurar a planilha na home não apaga o link público de cadastro', async ({ page }) => {
     await setupApiMock(page);
     await loginAsAdmin(page);
 
@@ -100,8 +104,12 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
 
     await expect(planilha.getByText('https://docs.google.com/spreadsheets/d/respostas')).toBeVisible();
 
-    /* O link de cadastro continua lá: a atualização é parcial. */
-    await expect(page.getByText('https://forms.gle/cadastro-lideres')).toBeVisible();
+    /* O link público de cadastro continua intacto na área pública. */
+    await page.goto('/');
+    await expect(page.getByTestId('link-cadastro-lideres-publico')).toHaveAttribute(
+      'href',
+      'https://forms.gle/cadastro-lideres'
+    );
   });
 
   test('link sem https:// é recusado antes de chegar ao servidor', async ({ page }) => {
@@ -121,11 +129,11 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
     ).toBeVisible();
   });
 
-  test('campo em branco remove o link fixado', async ({ page }) => {
+  test('remover o link de cadastro faz o botão sumir da área pública', async ({ page }) => {
     await setupApiMock(page);
     await loginAsAdmin(page);
 
-    await page.goto('/admin');
+    await page.goto('/admin/lideres');
 
     const cadastro = page.getByTestId('link-cadastro');
 
@@ -134,6 +142,10 @@ test.describe('US10 - Links fixados na página inicial do painel', () => {
     await cadastro.getByRole('button', { name: 'Salvar' }).click();
 
     await expect(cadastro.getByRole('button', { name: 'Configurar' })).toBeVisible();
+
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: /Nosso Organograma/i })).toBeVisible();
+    await expect(page.getByTestId('link-cadastro-lideres-publico')).toHaveCount(0);
   });
 });
 

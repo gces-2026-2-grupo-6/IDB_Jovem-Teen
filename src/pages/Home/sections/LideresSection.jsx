@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { ExternalLink } from "lucide-react";
 import { fetchAllLeaders, splitLeaders } from "../../../services/liderService";
+import { fetchLinkCadastroLideres } from "../../../services/painelService";
 
 function LeaderCard({ leader, isPast }) {
   return (
@@ -34,6 +36,7 @@ function EmptyMessage({ title, text }) {
 export default function LideresSection() {
   const [showPast, setShowPast] = useState(false);
   const [leaders, setLeaders] = useState([]);
+  const [linkCadastro, setLinkCadastro] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +45,16 @@ export default function LideresSection() {
       .then((data) => active && setLeaders(data))
       .catch(() => active && setLeaders([]))
       .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchLinkCadastroLideres()
+      .then((url) => active && setLinkCadastro(url))
+      .catch(() => active && setLinkCadastro(""));
     return () => {
       active = false;
     };
@@ -118,6 +131,24 @@ export default function LideresSection() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {linkCadastro && (
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 text-center relative z-10">
+            <p className="text-white text-sm md:text-base font-medium">
+              É pastor ou líder de uma igreja ou regional?
+            </p>
+            <a
+              href={linkCadastro}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="link-cadastro-lideres-publico"
+              className="inline-flex items-center gap-2 bg-white text-[#93370D] font-bold text-sm md:text-base px-6 py-2.5 rounded-full shadow-sm hover:scale-105 hover:bg-[#FFFDF9] transition-all"
+            >
+              Cadastrar-se como líder
+              <ExternalLink size={16} aria-hidden="true" />
+            </a>
           </div>
         )}
 
