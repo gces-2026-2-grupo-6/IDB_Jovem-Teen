@@ -37,8 +37,10 @@ function toMaterial(api) {
     description: api.descricao ?? "",
     type: api.tipo,
     link: api.link ?? "",
-    /* Pronto pelo back-end; o front só o coloca no href. */
+    previewLink: api.link_preview ?? "",
+    /* Prontos pelo back-end; o front só coloca no href e no src da prévia. */
     downloadUrl: api.url_download ?? "",
+    previewUrl: api.url_preview ?? "",
     createdAt: api.criado_em ?? null,
   };
 }
@@ -49,6 +51,7 @@ function toMaterialPayload(form) {
     tipo: form.type,
     link: String(form.link ?? "").trim(),
     descricao: String(form.description ?? "").trim() || null,
+    link_preview: String(form.previewLink ?? "").trim() || null,
   };
 }
 
@@ -75,6 +78,10 @@ function validateMaterial(data) {
   }
   if (!/^https?:\/\//i.test(data.link.trim())) {
     return "O link deve começar com https:// ou http://.";
+  }
+  const previewLink = String(data.previewLink ?? "").trim();
+  if (previewLink && !/^https?:\/\//i.test(previewLink)) {
+    return "O link da imagem de capa deve começar com https:// ou http://.";
   }
   return null;
 }
