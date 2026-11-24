@@ -1,8 +1,9 @@
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, XCircle, MapPin, Menu, X, User } from "lucide-react";
+import { Search, XCircle, MapPin, Menu, X, User, ExternalLink } from "lucide-react";
 import { NAV_LINKS } from "./header.constants";
 import { fetchAllEvents } from "../../../services/eventService";
+import { fetchLinkCadastroLideres } from "../../../services/painelService";
 const logoSvg = "/logo.svg";
 
 function normalizeText(value) {
@@ -45,6 +46,10 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [allEvents, setAllEvents] = useState([]);
+  /* US10: formulário externo onde os pastores das regionais se cadastram
+     sozinhos. Vazio enquanto a superadministradora não fixa o link — e aí o
+     botão não aparece, em vez de aparecer levando a lugar nenhum. */
+  const [linkCadastro, setLinkCadastro] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +70,14 @@ export default function Header() {
     fetchAllEvents()
       .then((events) => active && setAllEvents(events))
       .catch(() => { });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchLinkCadastroLideres()
+      .then((url) => active && setLinkCadastro(url))
+      .catch(() => active && setLinkCadastro(""));
     return () => { active = false; };
   }, []);
 
@@ -208,6 +221,19 @@ export default function Header() {
               </NavLink>
             );
           })}
+          {linkCadastro && (
+            <a
+              href={linkCadastro}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="link-cadastro-lideres-publico"
+              className="h-[40px] rounded-[10px] px-3 xl:px-4 bg-[#FF6D2C] hover:bg-[#e65c18] text-white text-[13px] xl:text-[14px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm hover:scale-[1.03] transition-all duration-300"
+            >
+              <span>Cadastro de líderes</span>
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          )}
+
           <NavLink to="/login">
             <button className="w-[35px] h-[35px] rounded-full bg-[#FF6D2C] flex items-center justify-center hover:scale-110 transition-all duration-300">
               <User size={20} className="text-white" />
@@ -296,8 +322,21 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Mobile Eventos Próximos */}
-        <div className="p-4 border-t border-gray-100">
+        {/* Mobile: cadastro de líderes e Eventos Próximos */}
+        <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
+          {linkCadastro && (
+            <a
+              href={linkCadastro}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="link-cadastro-lideres-publico-mobile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full h-[50px] rounded-xl border-2 border-[#FF6D2C] text-[#FF6D2C] font-bold flex items-center justify-center gap-2 hover:bg-[#FDF3EA] transition-colors"
+            >
+              Cadastro de líderes
+              <ExternalLink size={18} aria-hidden="true" />
+            </a>
+          )}
           <button
             onClick={() => {
               navigate("/eventos-proximos");
