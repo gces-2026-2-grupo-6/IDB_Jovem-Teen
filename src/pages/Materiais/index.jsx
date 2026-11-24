@@ -31,39 +31,59 @@ const FILTROS = [
 function MaterialCard({ material }) {
   const Icone = ICONE_DO_TIPO[material.type] || FileText;
   const externo = ehLinkExterno(material);
+  const [failedPreview, setFailedPreview] = useState("");
+  const showPreview = Boolean(material.previewUrl) && failedPreview !== material.previewUrl;
 
   return (
-    <article className="bg-white rounded-2xl p-5 shadow-sm flex flex-col gap-3 h-full">
-      <div className="flex items-start gap-3">
-        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#FFD9B3] text-[#8A3816] shrink-0">
-          <Icone size={18} />
-        </div>
-        <div className="min-w-0">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-[#8A3816]">
-            {ROTULO_DO_TIPO[material.type] || material.type}
-          </span>
-          <h2 className="font-bold text-[#1E1E1E] leading-snug">{material.title}</h2>
-        </div>
+    <article className="bg-white rounded-2xl overflow-hidden shadow-sm flex flex-col h-full">
+      <div className="w-full h-44 bg-[#FFF8F3] border-b border-gray-100 flex items-center justify-center overflow-hidden">
+        {showPreview ? (
+          <img
+            src={material.previewUrl}
+            alt={`Prévia de ${material.title}`}
+            loading="lazy"
+            onError={() => setFailedPreview(material.previewUrl)}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#FFD9B3] text-[#8A3816]">
+            <Icone size={26} aria-hidden="true" />
+          </div>
+        )}
       </div>
 
-      {material.description && (
-        <p className="text-sm text-[#1E1E1E]/60 leading-relaxed">{material.description}</p>
-      )}
+      <div className="p-5 flex flex-col gap-3 flex-1">
+        <div className="flex items-start gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FFD9B3] text-[#8A3816] shrink-0">
+            <Icone size={17} aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-[#8A3816]">
+              {ROTULO_DO_TIPO[material.type] || material.type}
+            </span>
+            <h2 className="font-bold text-[#1E1E1E] leading-snug">{material.title}</h2>
+          </div>
+        </div>
 
-      <div className="mt-auto pt-2">
-        <a
-          href={material.downloadUrl || material.link}
-          /* `download` só faz sentido no arquivo que vem do nosso back-end;
-             num link externo o atributo é ignorado pelo navegador e o alvo é
-             outra origem, então o certo ali é abrir em nova aba. */
-          {...(externo
-            ? { target: "_blank", rel: "noopener noreferrer" }
-            : { download: true })}
-          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-[#DC6803] hover:bg-[#b45309] rounded-lg px-4 py-2.5 transition-colors"
-        >
-          {externo ? <ExternalLink size={16} /> : <Download size={16} />}
-          {externo ? "Abrir" : "Baixar"}
-        </a>
+        {material.description && (
+          <p className="text-sm text-[#1E1E1E]/60 leading-relaxed">{material.description}</p>
+        )}
+
+        <div className="mt-auto pt-2">
+          <a
+            href={material.downloadUrl || material.link}
+            /* `download` só faz sentido no arquivo que vem do nosso back-end;
+               num link externo o atributo é ignorado pelo navegador e o alvo é
+               outra origem, então o certo ali é abrir em nova aba. */
+            {...(externo
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : { download: true })}
+            className="inline-flex items-center gap-2 text-sm font-bold text-white bg-[#DC6803] hover:bg-[#b45309] rounded-lg px-4 py-2.5 transition-colors"
+          >
+            {externo ? <ExternalLink size={16} /> : <Download size={16} />}
+            {externo ? "Abrir" : "Baixar"}
+          </a>
+        </div>
       </div>
     </article>
   );

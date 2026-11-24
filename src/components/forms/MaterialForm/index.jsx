@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { FileText, Image, Video } from "lucide-react";
+import { FileText, Image, ImagePlus, Video } from "lucide-react";
 import { TIPOS_MATERIAL, ROTULO_DO_TIPO } from "../../../services/materialService";
+import { toDriveImageUrl } from "../../../utils/driveImage";
 
 /* Formulário de material (US11).
 
@@ -30,8 +31,15 @@ export default function MaterialForm({
     description: initialData.description || "",
     type: initialData.type || "documento",
     link: initialData.link || "",
+    previewLink: initialData.previewLink || "",
   });
+  const [failedPreview, setFailedPreview] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const previewSrc = form.previewLink.trim()
+    ? toDriveImageUrl(form.previewLink)
+    : initialData.previewUrl || "";
+  const showPreview = Boolean(previewSrc) && failedPreview !== previewSrc;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -119,6 +127,45 @@ export default function MaterialForm({
             conta institucional, a mesma da galeria. Link externo, como um vídeo no YouTube,
             também funciona — nesse caso o botão abre o vídeo em vez de baixar.
           </p>
+        </div>
+
+        <hr className="my-5 border-gray-100" />
+
+        {/* Imagem de capa opcional */}
+        <div>
+          <label className={LABEL} htmlFor="material-preview">
+            Imagem de capa (opcional)
+          </label>
+          <div className="relative">
+            <input
+              id="material-preview"
+              type="url"
+              name="previewLink"
+              value={form.previewLink}
+              onChange={handleChange}
+              placeholder="https://drive.google.com/file/d/... (deixe vazio para prévia automática)"
+              className={`${INPUT} pr-10`}
+            />
+            <ImagePlus
+              size={16}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1E1E1E]/30"
+              aria-hidden="true"
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-[#1E1E1E]/50">
+            Arquivos do Drive e vídeos do YouTube já ganham prévia automática. Preencha só se
+            quiser trocar por outra imagem (.png, .jpg ou .webp compartilhada como pública).
+          </p>
+          {showPreview && (
+            <div className="mt-3 w-48 h-28 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+              <img
+                src={previewSrc}
+                alt="Preview da capa do material"
+                onError={() => setFailedPreview(previewSrc)}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
         </div>
 
         <hr className="my-5 border-gray-100" />
