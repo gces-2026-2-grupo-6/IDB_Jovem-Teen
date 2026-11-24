@@ -17,8 +17,8 @@ function diaComOffset(offsetDias) {
 }
 
 /* Serve um evento num dia qualquer, inclusive fora da semana atual. */
-async function servirEvento(page, { nome, offsetDias }) {
-  const dia = diaComOffset(offsetDias);
+async function servirEvento(page, { nome, offsetDias, dataFixa }) {
+  const dia = dataFixa || diaComOffset(offsetDias);
   await page.route(/\/evento\/?$/, (route) =>
     route.fulfill({
       status: 200,
@@ -52,14 +52,35 @@ function mesDe(offsetDias) {
 }
 
 test.describe('Calendário do painel — mês e navegação', () => {
-  test('anuncia o mês da semana exibida', async ({ page }) => {
+  test('anuncia o mês da semana exibida com "de" em minúsculo', async ({ page }) => {
     await loginAsAdmin(page);
     await setupApiMock(page);
     await page.goto('/admin');
 
-    await expect(
-      page.getByText(new RegExp(`${mesDe(0)}`, 'i')).first(),
-    ).toBeVisible();
+    const rotulo = page.getByText(new RegExp(`${mesDe(0)}`, 'i')).first();
+    await expect(rotulo).toBeVisible();
+    await expect(rotulo).not.toContainText(' De ');
+  });
+
+  test('permite selecionar mês e ano diretamente para navegar rápido', async ({ page }) => {
+    const hoje = new Date();
+    const anoAlvo = hoje.getFullYear();
+    const mesAlvo = hoje.getMonth() === 5 ? 2 : 5; // Junho (ou Março se já estivermos em Junho)
+    const p = (n) => String(n).padStart(2, '0');
+
+    await loginAsAdmin(page);
+    await setupApiMock(page);
+    await servirEvento(page, {
+      nome: 'Acampamento do Mês Escolhido',
+      dataFixa: `${anoAlvo}-${p(mesAlvo + 1)}-03`,
+    });
+    await page.goto('/admin');
+
+    await page.getByLabel('Selecionar ano').selectOption(String(anoAlvo));
+    await page.getByLabel('Selecionar mês').selectOption(String(mesAlvo));
+
+    await expect(page.getByTitle('Acampamento do Mês Escolhido').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Hoje' })).toBeEnabled();
   });
 
   test('evento de duas semanas atrás aparece ao voltar', async ({ page }) => {
