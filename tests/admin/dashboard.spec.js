@@ -50,11 +50,17 @@ test.describe('Dashboard Admin', () => {
     // Verificar se algum dia da semana aparece
     await expect(page.getByText('DOM', { exact: true })).toBeVisible();
     
-    // O calendário mini não tem botões de navegar meses, mostra só a semana atual. 
+    // O calendário mini não tem botões de navegar meses, mostra só a semana atual.
     // Logo, verificamos os horários.
-    await expect(page.getByText('8:00')).toBeVisible();
-    await expect(page.getByText('12:00')).toBeVisible();
-    await expect(page.getByText('17:00')).toBeVisible();
+    //
+    // Desde 23/11/2026 a grade cobre o dia inteiro, e não mais só das 8h às 17h —
+    // um evento da noite não aparecia. Por isso as horas são comparadas exatas e
+    // com zero à esquerda: `getByText('8:00')` casa por substring e passaria a
+    // encontrar também o `18:00`, falhando por ambiguidade.
+    await expect(page.getByText('08:00', { exact: true })).toBeVisible();
+    await expect(page.getByText('12:00', { exact: true })).toBeVisible();
+    await expect(page.getByText('17:00', { exact: true })).toBeVisible();
+    await expect(page.getByText('20:00', { exact: true })).toBeVisible();
   });
 
   test('deve testar os itens (Event Rows) da lista de eventos', async ({ page }) => {
