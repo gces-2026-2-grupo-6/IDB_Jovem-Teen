@@ -815,6 +815,11 @@ export async function setupApiMock(page, { evento } = {}) {
       }
 
       // ---------- PAINEL: LINKS FIXADOS (US10) ----------
+      if (path.match(/\/painel\/link-cadastro-lideres$/) && method === "GET") {
+        return route.fulfill(
+          json({ link_cadastro_lideres: db.painelLinks.link_cadastro_lideres })
+        );
+      }
       if (path.match(/\/painel\/links$/)) {
         if (method === "GET") {
           return route.fulfill(json(db.painelLinks));
