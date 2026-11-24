@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { fetchAllEvents, splitDateTime, eventDayKeys } from "../../../../services/eventService";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  fetchAllEvents,
+  splitDateTime,
+  eventDayKeys,
+  isNonConsecutive,
+} from "../../../../services/eventService";
 
 const WEEK_DAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
@@ -37,21 +42,55 @@ function generateCalendarDays() {
   return days;
 }
 
-/* Primeira e última linha da grade de horas exibida. */
-const FIRST_HOUR = 8;
-const LAST_HOUR = 17;
+/* A grade cobre o dia inteiro, 0h às 23h.
+
+   Antes ela ia das 8h às 17h, e um evento fora dessa faixa simplesmente não
+   era desenhado: o segmento recebia startHour 20, o laço só percorria 8 a 17,
+   nenhuma linha casava e nada aparecia — sem erro, sem aviso. Para um
+   ministério de jovens isso escondia quase tudo, porque culto, ensaio e
+   reunião são à noite. Encontrado com a cliente em 23/11/2026, num evento das
+   20h às 21h que não aparecia no painel.
+
+   Qualquer faixa menor que o dia inteiro só adia o mesmo defeito para o
+   próximo horário de fora. A altura é resolvida com rolagem, não encurtando a
+   grade. */
+const PRIMEIRA_HORA = 0;
+const ULTIMA_HORA = 23;
+
+/* Hora para onde a grade rola sozinha quando a semana não tem evento. */
+const HORA_DE_REFERENCIA = 8;
+
+function horaDe(texto, padrao) {
+  const h = Number(String(texto ?? "").slice(0, 2));
+  return Number.isFinite(h) ? Math.min(Math.max(h, PRIMEIRA_HORA), ULTIMA_HORA) : padrao;
+}
+
+/* Última linha ocupada por quem termina em `texto`. Terminar às HH:00 não
+   ocupa a linha HH inteira. */
+function ultimaHoraDe(texto, inicio) {
+  const [h, m] = String(texto ?? "")
+    .split(":")
+    .map(Number);
+  if (!Number.isFinite(h)) return inicio;
+  const fim = m > 0 ? h : h - 1;
+  return Math.min(Math.max(fim, inicio), ULTIMA_HORA);
+}
 
 /* Converte um evento nos segmentos que ele ocupa na grade: um por dia coberto
-   que caia na semana exibida. Um evento de vários dias ocupa uma coluna por
-   dia — o primeiro dia começa no horário de início, o último termina no de
-   término e os dias do meio ocupam a coluna inteira. Devolve lista vazia se
-   nenhum dia do evento cair na semana. */
+   que caia na semana exibida. Devolve lista vazia se nenhum dia cair nela.
+
+   Em "dias avulsos" o horário informado vale para todos os dias — é o que a
+   própria tela de cadastro promete. Antes, só o primeiro e o último dia
+   usavam o horário do evento e os do meio ocupavam a coluna inteira, o que
+   desenhava um evento de 20h às 21h como se tomasse o dia todo. */
 function placeEvent(event, days) {
   const dias = eventDayKeys(event);
   if (dias.length === 0) return [];
 
-  const start = splitDateTime(event.date);
-  const end = splitDateTime(event.endDate || event.date);
+  const inicio = horaDe(splitDateTime(event.date).time, PRIMEIRA_HORA);
+  const fim = ultimaHoraDe(splitDateTime(event.endDate || event.date).time, inicio);
+
+  const avulsos = isNonConsecutive(event);
   const segmentos = [];
 
   dias.forEach((key, i) => {
@@ -61,19 +100,25 @@ function placeEvent(event, days) {
     const isPrimeiro = i === 0;
     const isUltimo = i === dias.length - 1;
 
-    let startHour = isPrimeiro ? Number(start.time.slice(0, 2)) : FIRST_HOUR;
-    if (!Number.isFinite(startHour)) startHour = FIRST_HOUR;
-
+    let startHour;
     let lastHour;
-    if (isUltimo) {
-      const [endH, endM] = end.time.split(":").map(Number);
-      /* termina às HH:00 não ocupa a linha HH inteira */
-      lastHour = Number.isFinite(endH) ? (endM > 0 ? endH : endH - 1) : startHour;
+
+    if (avulsos || (isPrimeiro && isUltimo)) {
+      /* Dia solto, ou evento de um dia só: o horário do evento vale inteiro. */
+      startHour = inicio;
+      lastHour = fim;
+    } else if (isPrimeiro) {
+      /* Período contínuo: começa no horário e atravessa a virada do dia. */
+      startHour = inicio;
+      lastHour = ULTIMA_HORA;
+    } else if (isUltimo) {
+      startHour = PRIMEIRA_HORA;
+      lastHour = fim;
     } else {
-      lastHour = LAST_HOUR;
+      /* Dia do meio de um período contínuo: o evento está em curso o dia todo. */
+      startHour = PRIMEIRA_HORA;
+      lastHour = ULTIMA_HORA;
     }
-    /* garante ao menos a linha de início */
-    if (!Number.isFinite(lastHour) || lastHour < startHour) lastHour = startHour;
 
     segmentos.push({ col, startHour, lastHour, title: event.title, id: event.id });
   });
@@ -84,8 +129,12 @@ function placeEvent(event, days) {
 /* Componente Calendário Mini */
 export default function CalendarMini() {
   const days = generateCalendarDays();
-  const hours = Array.from({ length: LAST_HOUR - FIRST_HOUR + 1 }, (_, i) => i + FIRST_HOUR);
+  const hours = Array.from(
+    { length: ULTIMA_HORA - PRIMEIRA_HORA + 1 },
+    (_, i) => i + PRIMEIRA_HORA,
+  );
   const [placed, setPlaced] = useState([]);
+  const grade = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -100,6 +149,20 @@ export default function CalendarMini() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* Com o dia inteiro na grade, a semana sem evento abriria na madrugada.
+     Rola até o primeiro evento da semana, ou até a manhã quando não há nenhum. */
+  const primeiroEvento = useMemo(() => {
+    if (placed.length === 0) return HORA_DE_REFERENCIA;
+    return Math.min(...placed.map((p) => p.startHour));
+  }, [placed]);
+
+  useEffect(() => {
+    const caixa = grade.current;
+    if (!caixa) return;
+    const linha = caixa.querySelector(`[data-hora="${primeiroEvento}"]`);
+    if (linha) caixa.scrollTop = linha.offsetTop;
+  }, [primeiroEvento]);
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -125,11 +188,18 @@ export default function CalendarMini() {
         ))}
       </div>
 
-      {/* Grid de Horas */}
-      <div className="border-t border-gray-100 pt-2 space-y-0">
+      {/* Grid de Horas — dia inteiro, com rolagem para não dominar o painel */}
+      <div
+        ref={grade}
+        className="border-t border-gray-100 pt-2 space-y-0 max-h-[320px] overflow-y-auto"
+      >
         {hours.map((hour) => (
-          <div key={hour} className="flex items-stretch min-h-[28px] border-b border-gray-50">
-            <span className="text-[10px] text-[#1E1E1E]/30 w-10 shrink-0 pt-1">{hour}:00</span>
+          <div
+            key={hour}
+            data-hora={hour}
+            className="flex items-stretch min-h-[28px] border-b border-gray-50"
+          >
+            <span className="text-[10px] text-[#1E1E1E]/30 w-10 shrink-0 pt-1">{pad(hour)}:00</span>
             <div className="flex-1 grid grid-cols-7 gap-0.5">
               {WEEK_DAYS.map((_, col) => {
                 const ev = placed.find(
