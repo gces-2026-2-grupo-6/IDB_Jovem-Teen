@@ -15,8 +15,14 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
     formularioPedidoLink: initialData.formularioPedidoLink || "",
   });
 
+  /* O preview escondia a imagem no onError. Formato que o navegador nao abre
+     - HEIC de iPhone e o caso comum - sumia sem dizer nada, e a pessoa so
+     descobria olhando a loja publica depois. Agora a falha fala. */
+  const [previewFalhou, setPreviewFalhou] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "image") setPreviewFalhou(false);
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -102,6 +108,8 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
           </div>
           <p className="mt-1.5 text-xs text-[#1E1E1E]/50">
             Cole o link de compartilhar do Drive (arquivo como &quot;qualquer pessoa com o link&quot;).
+            Formatos aceitos: <strong>.jpg</strong>, <strong>.png</strong> ou <strong>.webp</strong>.
+            Foto de iPhone costuma sair em .heic, que o navegador não exibe.
           </p>
         </div>
 
@@ -116,9 +124,22 @@ export default function ProductForm({ initialData = {}, onSubmit }) {
                   src={toDriveImageUrl(form.image)}
                   alt="Preview do produto"
                   className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  onLoad={() => setPreviewFalhou(false)}
+                  onError={() => setPreviewFalhou(true)}
                 />
               </div>
+              {previewFalhou && (
+                <p
+                  role="alert"
+                  data-testid="erro-preview-produto"
+                  className="mt-2 text-xs text-[#C0504D] max-w-sm"
+                >
+                  Não foi possível exibir esta imagem. Confira se o arquivo está
+                  compartilhado como &quot;qualquer pessoa com o link&quot; e se é
+                  .jpg, .png ou .webp &mdash; .heic (foto de iPhone) não aparece no
+                  navegador.
+                </p>
+              )}
             </div>
           </>
         )}
