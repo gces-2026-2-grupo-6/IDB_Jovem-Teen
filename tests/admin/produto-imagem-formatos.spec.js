@@ -45,16 +45,22 @@ test.describe('Produto — formatos aceitos na imagem', () => {
     await expect(aviso).toContainText('.heic');
   });
 
-  test('o aviso some quando o link muda', async ({ page }) => {
+  test('o aviso some quando a imagem passa a carregar', async ({ page }) => {
     await page.route(/drive\.google\.com|googleusercontent|\/drive\/imagem\//, (route) =>
       route.abort(),
     );
     await page.locator('#image').fill('https://drive.google.com/file/d/1Quebrada/view');
     await expect(page.getByTestId('erro-preview-produto')).toBeVisible();
 
-    await page.locator('#image').fill('https://drive.google.com/file/d/1Outra/view');
-    /* O aviso é reposto pelo onError seguinte, se houver; o que não pode é
-       continuar na tela por causa do link anterior. */
+    /* Uma imagem que o navegador abre de verdade, sem rede: 1x1 PNG embutido.
+       Não dá para afirmar nada no instante da troca de link — o onError do
+       link novo pode chegar antes da asserção, e foi assim que a versão
+       anterior deste teste ficou intermitente no WebKit. O que se verifica é
+       o estado final: imagem que carrega, aviso fora da tela. */
+    await page.locator('#image').fill(
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    );
+
     await expect(page.getByTestId('erro-preview-produto')).toHaveCount(0);
   });
 });

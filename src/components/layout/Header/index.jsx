@@ -158,9 +158,9 @@ export default function Header() {
         </Link>
 
         {/* Desktop: Search + Eventos Próximos + Nav */}
-        <div className="hidden lg:flex items-center gap-4 flex-1 max-w-[650px] mx-6">
+        <div className="hidden lg:flex items-center gap-2 2xl:gap-4 flex-1 min-w-0 max-w-[650px] mx-3 2xl:mx-6">
           {/* Search Bar */}
-          <div ref={searchRef} className="relative flex-1 max-w-[395px]">
+          <div ref={searchRef} className="relative hidden xl:block flex-1 min-w-0 max-w-[300px] 2xl:max-w-[395px]">
             <div className="h-[45px] rounded-[10px] border border-[#E0E0E0] bg-[#F2F2F2]/95 shadow-search flex items-center px-4 gap-3">
               <Search size={20} className="text-[#FF6D2C] cursor-pointer shrink-0" onClick={handleSearch} />
               <input
@@ -185,9 +185,11 @@ export default function Header() {
           {/* Eventos Próximos */}
           <button
             onClick={() => navigate("/eventos-proximos")}
-            className="h-[45px] rounded-[10px] border border-[#E0E0E0] bg-[#F2F2F2]/95 shadow-search flex items-center justify-center gap-2 px-4 hover:bg-[#FF6D2C] group transition-all duration-300 shrink-0"
+            aria-label="Eventos próximos"
+            title="Eventos próximos"
+            className="h-[45px] rounded-[10px] border border-[#E0E0E0] bg-[#F2F2F2]/95 shadow-search flex items-center justify-center gap-2 px-3 2xl:px-4 hover:bg-[#FF6D2C] group transition-all duration-300 shrink-0"
           >
-            <span className="text-[#FF6D2C] text-[14px] font-bold group-hover:text-white transition-all whitespace-nowrap">
+            <span className="hidden 2xl:inline text-[#FF6D2C] text-[14px] font-bold group-hover:text-white transition-all whitespace-nowrap">
               Eventos próximos
             </span>
             <MapPin size={21} className="text-[#FF6D2C] group-hover:text-white transition-all" />
@@ -195,7 +197,7 @@ export default function Header() {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-2 shrink-0">
+        <nav className="hidden lg:flex items-center gap-1 2xl:gap-2 min-w-0">
           {NAV_LINKS.map((item) => {
             const isHashLink = item.path.startsWith("/#");
             return (
@@ -207,11 +209,11 @@ export default function Header() {
               >
                 {({ isActive }) => (
                   <div
-                    className={`h-[45px] rounded-[10px] px-3 xl:px-4 flex items-center justify-center group transition-all duration-300 ${!isHashLink && isActive ? "bg-[#FF6D2C]/10" : "hover:bg-[#FF6D2C]"
+                    className={`h-[45px] rounded-[10px] px-2 2xl:px-4 flex items-center justify-center group transition-all duration-300 ${!isHashLink && isActive ? "bg-[#FF6D2C]/10" : "hover:bg-[#FF6D2C]"
                       }`}
                   >
                     <span
-                      className={`text-[14px] xl:text-[15px] font-medium whitespace-nowrap transition-all duration-300 ${!isHashLink && isActive ? "text-[#FF6D2C]" : "text-black group-hover:text-white"
+                      className={`text-[13px] 2xl:text-[15px] font-medium whitespace-nowrap transition-all duration-300 ${!isHashLink && isActive ? "text-[#FF6D2C]" : "text-black group-hover:text-white"
                         }`}
                     >
                       {item.label}
@@ -227,9 +229,9 @@ export default function Header() {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="link-cadastro-lideres-publico"
-              className="h-[40px] rounded-[10px] px-3 xl:px-4 bg-[#FF6D2C] hover:bg-[#e65c18] text-white text-[13px] xl:text-[14px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm hover:scale-[1.03] transition-all duration-300"
+              className="h-[40px] shrink-0 rounded-[10px] px-2.5 2xl:px-4 bg-[#FF6D2C] hover:bg-[#e65c18] text-white text-[12px] 2xl:text-[14px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm hover:scale-[1.03] transition-all duration-300"
             >
-              <span>Cadastro de líderes</span>
+              <span>Cadastro de líderes nacionais</span>
               <ExternalLink size={14} aria-hidden="true" />
             </a>
           )}
@@ -333,7 +335,7 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
               className="w-full h-[50px] rounded-xl border-2 border-[#FF6D2C] text-[#FF6D2C] font-bold flex items-center justify-center gap-2 hover:bg-[#FDF3EA] transition-colors"
             >
-              Cadastro de líderes
+              Cadastro de líderes nacionais
               <ExternalLink size={18} aria-hidden="true" />
             </a>
           )}
