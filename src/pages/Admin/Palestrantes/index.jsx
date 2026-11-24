@@ -21,6 +21,7 @@ export default function AdminPalestrantes() {
 
   const [convidados, setConvidados] = useState([]);
   const [vinculos, setVinculos] = useState({});
+  const [carregandoVinculos, setCarregandoVinculos] = useState(true);
   const [termo, setTermo] = useState("");
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -30,30 +31,52 @@ export default function AdminPalestrantes() {
      agregação mora no serviço, porque a tela de detalhe usa a mesma. */
   const recarregar = async () => {
     setLoading(true);
+    setCarregandoVinculos(true);
     try {
-      const [lista, contagem] = await Promise.all([fetchSpeakers(), fetchParticipacoesPorConvidado()]);
-      setConvidados(lista);
-      setVinculos(contagem);
+      setConvidados(await fetchSpeakers());
     } catch {
       setErro("Não foi possível carregar os convidados.");
     } finally {
       setLoading(false);
+    }
+    try {
+      setVinculos(await fetchParticipacoesPorConvidado());
+    } catch {
+      setVinculos({});
+    } finally {
+      setCarregandoVinculos(false);
     }
   };
 
   useEffect(() => {
     let ativo = true;
 
+    /* A lista aparece assim que os convidados chegam. A contagem de eventos
+       vem depois, por fora.
+
+       Antes as duas coisas eram esperadas juntas num Promise.all, e
+       fetchParticipacoesPorConvidado faz uma requisicao por evento: com o
+       passar dos meses a tela ficava em "Carregando convidados..." cada vez
+       mais tempo, e nada da lista existia no DOM enquanto isso — nem o botao
+       Excluir. */
     (async () => {
       try {
-        const [lista, contagem] = await Promise.all([fetchSpeakers(), fetchParticipacoesPorConvidado()]);
+        const lista = await fetchSpeakers();
         if (!ativo) return;
         setConvidados(lista);
-        setVinculos(contagem);
       } catch {
         if (ativo) setErro("Não foi possível carregar os convidados.");
       } finally {
         if (ativo) setLoading(false);
+      }
+
+      try {
+        const contagem = await fetchParticipacoesPorConvidado();
+        if (ativo) setVinculos(contagem);
+      } catch {
+        if (ativo) setVinculos({});
+      } finally {
+        if (ativo) setCarregandoVinculos(false);
       }
     })();
 
@@ -148,9 +171,11 @@ export default function AdminPalestrantes() {
                   {/* O reaproveitamento é o ponto da história: mostrar em quantos
                       eventos o convidado já está torna isso visível. */}
                   <div className="hidden sm:block text-xs text-[#1E1E1E]/40 max-w-[200px] text-right">
-                    {eventos.length === 0
-                      ? "Ainda não vinculado"
-                      : eventos.length === 1
+                    {carregandoVinculos
+                      ? "..."
+                      : eventos.length === 0
+                        ? "Ainda não vinculado"
+                        : eventos.length === 1
                         ? "Em 1 evento"
                         : `Em ${eventos.length} eventos`}
                   </div>
