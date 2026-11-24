@@ -34,7 +34,6 @@ import AdminPalestranteEdit from "../pages/Admin/Palestrantes/Edit";
 import AdminProdutos from "../pages/Admin/Produtos";
 import AdminProdutoCreate from "../pages/Admin/Produtos/Create";
 import AdminProdutoEdit from "../pages/Admin/Produtos/Edit";
-import AdminPedidos from "../pages/Admin/Pedidos";
 import AdminVoluntarios from "../pages/Admin/Voluntarios";
 import AdminVoluntarioDetails from "../pages/Admin/Voluntarios/Details";
 import AdminAdministradores from "../pages/Admin/Administradores";
@@ -81,8 +80,10 @@ export default function AppRoutes() {
             <Route path="/admin/produtos" element={<AdminProdutos />} />
             <Route path="/admin/produtos/criar" element={<AdminProdutoCreate />} />
             <Route path="/admin/produtos/:id/editar" element={<AdminProdutoEdit />} />
-            {/* US21: pedidos de produto — mesma guarda de setor que a loja. */}
-            <Route path="/admin/pedidos" element={<AdminPedidos />} />
+            {/* US21 (pedidos) retirada em 23/11/2026 a pedido da cliente: a
+                loja nunca ofereceu o formulário ao visitante, então a tela
+                nunca teve o que listar. Os arquivos em pages/Admin/Pedidos e
+                services/*pedido* ficam como código morto; o back-end segue. */}
           </Route>
 
           {/* Setor Inscrições — no sistema, a tela que gerencia inscrições é a

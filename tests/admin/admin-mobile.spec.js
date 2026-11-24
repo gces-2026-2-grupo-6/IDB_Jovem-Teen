@@ -24,7 +24,9 @@ const ITENS_DO_MENU = [
   { nome: 'Produtos', url: /\/admin\/produtos$/, titulo: 'Produtos' },
   { nome: 'Diretores & Líderes', url: /\/admin\/lideres$/, titulo: /Diretores|Líderes/ },
   { nome: 'Missão e valores', url: /\/admin\/institucional$/, titulo: 'Missão, visão e valores' },
-  { nome: 'Administradores', url: /\/admin\/administradores$/, titulo: 'Administradores' },
+  /* Administradores saiu do menu em 23/11/2026 a pedido da cliente. A rota
+     continua existindo e segue coberta pela lista TELAS abaixo, que navega
+     por URL; só a navegação pelo menu deixou de ser possível. */
 ];
 
 /* Listagens e formulários principais do painel. */

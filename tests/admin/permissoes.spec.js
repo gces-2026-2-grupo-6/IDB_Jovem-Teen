@@ -21,7 +21,7 @@ test.describe('Menu do painel por setor', () => {
     await expect(menu(page).filter({ hasText: 'Eventos' })).toBeVisible();
     await expect(menu(page).filter({ hasText: 'Produtos' })).toBeVisible();
     await expect(menu(page).filter({ hasText: 'Voluntários' })).toBeVisible();
-    await expect(menu(page).filter({ hasText: 'Administradores' })).toBeVisible();
+    await expect(menu(page).filter({ hasText: 'Materiais' })).toBeVisible();
   });
 
   test('administrador de produtos vê só o seu setor', async ({ page }) => {
@@ -34,13 +34,17 @@ test.describe('Menu do painel por setor', () => {
     await expect(menu(page).filter({ hasText: 'Voluntários' })).toHaveCount(0);
   });
 
-  test('administrador comum não vê o item de administradores', async ({ page }) => {
+  /* A prova do "só superadmin vê" era feita com o item Administradores, que
+     saiu do menu em 23/11/2026 a pedido da cliente. Materiais é também
+     somenteSuperadmin, então assume o papel: sem trocar, o teste continuaria
+     verde afirmando nada, porque ninguém mais vê Administradores. */
+  test('administrador comum não vê os itens exclusivos da superadmin', async ({ page }) => {
     await loginComPapeis(page, ADMIN_EVENTOS);
     await setupApiMock(page);
     await page.goto('/admin');
 
     await expect(menu(page).filter({ hasText: 'Eventos' })).toBeVisible();
-    await expect(menu(page).filter({ hasText: 'Administradores' })).toHaveCount(0);
+    await expect(menu(page).filter({ hasText: 'Materiais' })).toHaveCount(0);
   });
 
   test('administrador de dois setores vê os dois', async ({ page }) => {

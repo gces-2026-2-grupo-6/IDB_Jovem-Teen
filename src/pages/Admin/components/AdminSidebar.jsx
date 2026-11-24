@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, CalendarDays, Users, Mic, ShoppingCart, ClipboardList, UsersRound, ShieldCheck, FolderDown, LogOut, X, BookOpen } from "lucide-react";
+import { Home, CalendarDays, Users, Mic, ShoppingCart, UsersRound, FolderDown, LogOut, X, BookOpen } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import usePermissao from "../../../hooks/usePermissao";
 import { SETOR } from "../../../utils/permissoes";
@@ -13,8 +13,10 @@ const sidebarLinks = [
   { label: "Convidados", path: "/admin/palestrantes", icon: Mic, setor: SETOR.EVENTOS },
   { label: "Voluntários", path: "/admin/voluntarios", icon: Users, setor: SETOR.INSCRICOES },
   { label: "Produtos", path: "/admin/produtos", icon: ShoppingCart, setor: SETOR.PRODUTOS },
-  /* US21: pedidos de produto, mesmo setor da loja. */
-  { label: "Pedidos", path: "/admin/pedidos", icon: ClipboardList, setor: SETOR.PRODUTOS },
+  /* US21 (Pedidos) saiu do menu em 23/11/2026, a pedido da cliente na reunião
+     de validação: a loja nunca ofereceu o formulário de pedido ao visitante,
+     então a tela nunca teve o que listar. Código morto — a rota foi removida
+     em AppRoutes; o back-end e a tabela `pedido` continuam de pé. */
   /* Vindo da US05: a galeria de diretores é restrita ao superadministrador,
      então usa o mesmo sinalizador dos demais itens exclusivos. */
   {
@@ -40,13 +42,11 @@ const sidebarLinks = [
     setor: null,
     somenteSuperadmin: true,
   },
-  {
-    label: "Administradores",
-    path: "/admin/administradores",
-    icon: ShieldCheck,
-    setor: null,
-    somenteSuperadmin: true,
-  },
+  /* Administradores saiu do menu em 23/11/2026, a pedido da cliente: a tela
+     não concede acesso nenhum (quem concede é o Keycloak, pelos papéis), então
+     ficou sem sentido para ela. Código morto no menu — a rota continua
+     alcançável por URL porque a suíte de permissões a usa, e o registro das
+     entregas anteriores depende dela. */
 ];
 
 export default function AdminSidebar({ isOpen, onClose }) {
