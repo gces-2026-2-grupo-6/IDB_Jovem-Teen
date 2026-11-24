@@ -6,7 +6,7 @@ import usePermissao from "../../../../hooks/usePermissao";
 /* Links do cadastro nacional de líderes (US10).
 
    O cadastro dos mais de 2500 líderes acontece fora do site: cada líder se
-   inscreve pelo formulário externo exposto na área pública (Nosso Organograma)
+   inscreve pelo formulário externo exposto em destaque no cabeçalho do site
    e as respostas caem na planilha.
 
    Na home do painel fica fixado apenas o link da planilha de respostas; o
@@ -20,7 +20,7 @@ const CARDS_POR_CAMPO = {
     titulo: "Link de cadastro de líderes",
     Icone: UserPlus,
     ajuda:
-      "Formulário exibido na página inicial (Nosso Organograma) para pastores e líderes das regionais se cadastrarem sozinhos.",
+      "Formulário exibido em destaque no cabeçalho do site (Cadastro de líderes nacionais) para pastores e líderes se cadastrarem sozinhos.",
     placeholder: "https://forms.gle/...",
   },
   planilha: {
@@ -42,7 +42,7 @@ const CABECALHO_POR_MODO = {
   cadastro: {
     titulo: "Formulário público de cadastro de líderes",
     descricao:
-      "Quando configurado, um botão de cadastro aparece na seção Nosso Organograma da página inicial. Publicar um diretor na galeria continua sendo feito abaixo.",
+      'Quando configurado, o botão "Cadastro de líderes nacionais" aparece em destaque no cabeçalho do site. Publicar um diretor na galeria continua sendo feito abaixo.',
     testId: "links-lideres-cadastro",
   },
 };

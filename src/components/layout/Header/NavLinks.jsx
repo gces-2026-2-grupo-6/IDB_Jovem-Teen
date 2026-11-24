@@ -1,10 +1,23 @@
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { User } from "lucide-react";
+import { User, ExternalLink } from "lucide-react";
 import { NAV_LINKS } from "./header.constants";
+import { fetchLinkCadastroLideres } from "../../../services/painelService";
 
 export default function NavLinks() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [linkCadastro, setLinkCadastro] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetchLinkCadastroLideres()
+      .then((url) => active && setLinkCadastro(url))
+      .catch(() => active && setLinkCadastro(""));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleClick = (e, item) => {
     if (item.path.startsWith("/#")) {
@@ -27,7 +40,7 @@ export default function NavLinks() {
   };
 
   return (
-    <nav className="flex items-center gap-3 shrink-0">
+    <nav className="flex items-center gap-2 shrink-0">
       {NAV_LINKS.map((item) => {
         const isHashLink = item.path.startsWith("/#");
 
@@ -78,6 +91,36 @@ export default function NavLinks() {
           </NavLink>
         );
       })}
+
+      {linkCadastro && (
+        <a
+          href={linkCadastro}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="link-cadastro-lideres-publico"
+          className="
+            h-[40px]
+            rounded-[10px]
+            px-4
+            bg-[#FF6D2C]
+            hover:bg-[#e65c18]
+            text-white
+            text-[14px]
+            font-bold
+            whitespace-nowrap
+            inline-flex
+            items-center
+            gap-1.5
+            shadow-sm
+            hover:scale-[1.03]
+            transition-all
+            duration-300
+          "
+        >
+          <span>Cadastro de líderes nacionais</span>
+          <ExternalLink size={14} aria-hidden="true" />
+        </a>
+      )}
 
       <NavLink to="/login">
         <button
