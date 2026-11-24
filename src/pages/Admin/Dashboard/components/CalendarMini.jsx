@@ -8,6 +8,21 @@ import {
 
 const WEEK_DAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
 const pad = (n) => String(n).padStart(2, "0");
 
 /* Paleta de cores estável: cada evento sempre cai na mesma cor (pelo id). */
@@ -23,13 +38,33 @@ function colorForEvent(id) {
   return EVENT_COLORS[Math.abs(Number(id) || 0) % EVENT_COLORS.length];
 }
 
+function inicioDaSemana(data) {
+  const d = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+/* Quantas semanas de diferença existem entre a semana atual e a primeira
+   semana do mês/ano escolhidos. Quando o usuário escolhe o mês/ano correntes,
+   volta direto para a semana de hoje (offset 0). */
+function semanasAte(ano, mes) {
+  const hoje = new Date();
+  if (ano === hoje.getFullYear() && mes === hoje.getMonth()) {
+    return 0;
+  }
+  const domingoAtual = inicioDaSemana(hoje);
+  const domingoAlvo = inicioDaSemana(new Date(ano, mes, 1));
+  const msPorSemana = 7 * 24 * 60 * 60 * 1000;
+  return Math.round((domingoAlvo - domingoAtual) / msPorSemana);
+}
+
 /* Dias de uma semana (DOM → SÁB) com a chave "YYYY-MM-DD" para casar com os
    eventos. `offsetSemanas` desloca a semana exibida: 0 é a atual, -1 a
    anterior, +1 a seguinte. */
 function generateCalendarDays(offsetSemanas = 0) {
   const today = new Date();
-  const startDate = new Date(today);
-  startDate.setDate(today.getDate() - today.getDay() + offsetSemanas * 7);
+  const startDate = inicioDaSemana(today);
+  startDate.setDate(startDate.getDate() + offsetSemanas * 7);
 
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -128,24 +163,27 @@ function placeEvent(event, days) {
   return segmentos;
 }
 
-/* De que mês é a grade: "novembro de 2026", ou "nov – dez de 2026" quando a
-   semana atravessa a virada do mês.
+function capitalizarPrimeiraLetra(texto) {
+  return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : "";
+}
 
-   A grade mostrava só os números dos dias. Numa semana de virada de mês, 29,
-   30, 1, 2 não diz de que mês é nenhum deles, e o número sozinho também não
-   diz nada quando a pessoa navega para outra semana. */
+/* De que mês é a grade: "Novembro de 2026", ou "Nov – dez de 2026" quando a
+   semana atravessa a virada do mês. Apenas a inicial é capitalizada para
+   manter a preposição "de" em minúsculo. */
 function rotuloDoPeriodo(days) {
   const primeiro = new Date(`${days[0].key}T12:00:00`);
   const ultimo = new Date(`${days[6].key}T12:00:00`);
   const mes = (d, formato) => d.toLocaleDateString("pt-BR", { month: formato });
 
+  let rotulo;
   if (primeiro.getMonth() === ultimo.getMonth()) {
-    return `${mes(primeiro, "long")} de ${primeiro.getFullYear()}`;
+    rotulo = `${mes(primeiro, "long")} de ${primeiro.getFullYear()}`;
+  } else if (primeiro.getFullYear() === ultimo.getFullYear()) {
+    rotulo = `${mes(primeiro, "short")} – ${mes(ultimo, "short")} de ${ultimo.getFullYear()}`;
+  } else {
+    rotulo = `${mes(primeiro, "short")} ${primeiro.getFullYear()} – ${mes(ultimo, "short")} ${ultimo.getFullYear()}`;
   }
-  if (primeiro.getFullYear() === ultimo.getFullYear()) {
-    return `${mes(primeiro, "short")} – ${mes(ultimo, "short")} de ${ultimo.getFullYear()}`;
-  }
-  return `${mes(primeiro, "short")} ${primeiro.getFullYear()} – ${mes(ultimo, "short")} ${ultimo.getFullYear()}`;
+  return capitalizarPrimeiraLetra(rotulo);
 }
 
 /* Componente Calendário Mini */
@@ -156,12 +194,29 @@ export default function CalendarMini() {
   const [offsetSemanas, setOffsetSemanas] = useState(0);
   const days = useMemo(() => generateCalendarDays(offsetSemanas), [offsetSemanas]);
 
+  const dataReferencia = useMemo(
+    () => (offsetSemanas === 0 ? new Date() : new Date(`${days[6].key}T12:00:00`)),
+    [offsetSemanas, days],
+  );
+  const mesSelecionado = dataReferencia.getMonth();
+  const anoSelecionado = dataReferencia.getFullYear();
+
   const hours = Array.from(
     { length: ULTIMA_HORA - PRIMEIRA_HORA + 1 },
     (_, i) => i + PRIMEIRA_HORA,
   );
   const [eventos, setEventos] = useState([]);
   const grade = useRef(null);
+
+  const anosDisponiveis = useMemo(() => {
+    const base = new Date().getFullYear();
+    const anos = new Set([base - 2, base - 1, base, base + 1, base + 2, anoSelecionado]);
+    for (const ev of eventos) {
+      const y = Number(String(ev.date || "").slice(0, 4));
+      if (Number.isFinite(y) && y > 1900) anos.add(y);
+    }
+    return Array.from(anos).sort((a, b) => a - b);
+  }, [eventos, anoSelecionado]);
 
   /* Busca uma vez. A navegação entre semanas é recorte do que já está em
      memória — trocar de semana não deve ir à rede de novo. */
@@ -201,36 +256,66 @@ export default function CalendarMini() {
         <h3 className="font-bold text-[#1E1E1E] text-lg">Calendário</h3>
       </div>
 
-      {/* Mês da grade e navegação entre semanas */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-[#1E1E1E]/70 capitalize">
+      {/* Mês da grade e navegação rápida por mês/ano ou semana */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span className="text-sm font-semibold text-[#1E1E1E]/70">
           {rotuloDoPeriodo(days)}
         </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Semana anterior"
-            onClick={() => setOffsetSemanas((n) => n - 1)}
-            className="w-7 h-7 rounded-full text-[#1E1E1E]/60 hover:bg-gray-100 hover:text-[#1E1E1E] transition-colors"
+        <div className="flex flex-wrap items-center gap-1.5">
+          <select
+            aria-label="Selecionar mês"
+            value={mesSelecionado}
+            onChange={(e) =>
+              setOffsetSemanas(semanasAte(anoSelecionado, Number(e.target.value)))
+            }
+            className="h-7 px-2 rounded-lg border border-gray-200 bg-gray-50/70 text-xs font-semibold text-[#1E1E1E]/80 hover:border-[#FF6D2C]/50 focus:outline-none focus:border-[#FF6D2C] transition-colors cursor-pointer"
           >
-            ‹
-          </button>
-          <button
-            type="button"
-            onClick={() => setOffsetSemanas(0)}
-            disabled={offsetSemanas === 0}
-            className="px-2 h-7 rounded-full text-xs font-semibold text-[#FF6D2C] hover:bg-[#FF6D2C]/10 disabled:text-[#1E1E1E]/25 disabled:hover:bg-transparent transition-colors"
+            {MESES.map((nome, idx) => (
+              <option key={nome} value={idx}>
+                {nome}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Selecionar ano"
+            value={anoSelecionado}
+            onChange={(e) =>
+              setOffsetSemanas(semanasAte(Number(e.target.value), mesSelecionado))
+            }
+            className="h-7 px-2 rounded-lg border border-gray-200 bg-gray-50/70 text-xs font-semibold text-[#1E1E1E]/80 hover:border-[#FF6D2C]/50 focus:outline-none focus:border-[#FF6D2C] transition-colors cursor-pointer"
           >
-            Hoje
-          </button>
-          <button
-            type="button"
-            aria-label="Semana seguinte"
-            onClick={() => setOffsetSemanas((n) => n + 1)}
-            className="w-7 h-7 rounded-full text-[#1E1E1E]/60 hover:bg-gray-100 hover:text-[#1E1E1E] transition-colors"
-          >
-            ›
-          </button>
+            {anosDisponiveis.map((ano) => (
+              <option key={ano} value={ano}>
+                {ano}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Semana anterior"
+              onClick={() => setOffsetSemanas((n) => n - 1)}
+              className="w-7 h-7 rounded-full text-[#1E1E1E]/60 hover:bg-gray-100 hover:text-[#1E1E1E] transition-colors"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => setOffsetSemanas(0)}
+              disabled={offsetSemanas === 0}
+              className="px-2 h-7 rounded-full text-xs font-semibold text-[#FF6D2C] hover:bg-[#FF6D2C]/10 disabled:text-[#1E1E1E]/25 disabled:hover:bg-transparent transition-colors"
+            >
+              Hoje
+            </button>
+            <button
+              type="button"
+              aria-label="Semana seguinte"
+              onClick={() => setOffsetSemanas((n) => n + 1)}
+              className="w-7 h-7 rounded-full text-[#1E1E1E]/60 hover:bg-gray-100 hover:text-[#1E1E1E] transition-colors"
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
 
