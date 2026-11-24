@@ -3,34 +3,49 @@ import { ExternalLink, Copy, Check, Pencil, Link2, Table2, UserPlus } from "luci
 import { fetchLinksPainel, handleSalvarLink } from "../../../../services/painelService";
 import usePermissao from "../../../../hooks/usePermissao";
 
-/* Os dois links fixados na página inicial do painel (US10, CA1 a CA4).
+/* Links do cadastro nacional de líderes (US10).
 
    O cadastro dos mais de 2500 líderes acontece fora do site: cada líder se
-   inscreve por um formulário externo e as respostas caem numa planilha. O
-   painel só fixa os dois endereços — um para divulgar, outro para consultar —
-   e permite trocá-los sem depender da equipe técnica (CA4).
+   inscreve pelo formulário externo exposto na área pública (Nosso Organograma)
+   e as respostas caem na planilha.
 
-   O card inteiro é exclusivo da superadministradora (CA3). Para o
-   administrador de setor não basta esconder: a rota sequer é chamada, porque a
-   planilha reúne nome, e-mail e WhatsApp de mais de 2500 pessoas e o back-end
-   recusa a leitura com 403. */
+   Na home do painel fica fixado apenas o link da planilha de respostas; o
+   endereço do formulário público é configurado na tela Diretores & Líderes.
+   Os dois seguem restritos à superadministradora (CA3) — para administrador de
+   setor, a rota /painel/links nem é chamada. */
 
-const CARDS = [
-  {
+const CARDS_POR_CAMPO = {
+  cadastro: {
     campo: "cadastro",
     titulo: "Link de cadastro de líderes",
     Icone: UserPlus,
-    ajuda: "Formulário externo que cada líder preenche. É este o link para divulgar.",
+    ajuda:
+      "Formulário exibido na página inicial (Nosso Organograma) para pastores e líderes das regionais se cadastrarem sozinhos.",
     placeholder: "https://forms.gle/...",
   },
-  {
+  planilha: {
     campo: "planilha",
     titulo: "Planilha de respostas",
     Icone: Table2,
     ajuda: "Planilha com as respostas do formulário. É de consulta, não para divulgar.",
     placeholder: "https://docs.google.com/spreadsheets/d/...",
   },
-];
+};
+
+const CABECALHO_POR_MODO = {
+  planilha: {
+    titulo: "Cadastro nacional de líderes",
+    descricao:
+      "As respostas do formulário público de cadastro de líderes vão para esta planilha. O link do formulário exibido no site é configurado em Diretores & Líderes.",
+    testId: "links-lideres",
+  },
+  cadastro: {
+    titulo: "Formulário público de cadastro de líderes",
+    descricao:
+      "Quando configurado, um botão de cadastro aparece na seção Nosso Organograma da página inicial. Publicar um diretor na galeria continua sendo feito abaixo.",
+    testId: "links-lideres-cadastro",
+  },
+};
 
 function LinkFixado({ card, valor, onSalvar }) {
   const { campo, titulo, Icone, ajuda, placeholder } = card;
@@ -174,12 +189,15 @@ function LinkFixado({ card, valor, onSalvar }) {
   );
 }
 
-export default function LinksLideresCard() {
+export default function LinksLideresCard({ somente = "planilha" }) {
   const { ehSuperadmin } = usePermissao();
 
   const [links, setLinks] = useState({ cadastro: "", planilha: "" });
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+
+  const card = CARDS_POR_CAMPO[somente] || CARDS_POR_CAMPO.planilha;
+  const cabecalho = CABECALHO_POR_MODO[somente] || CABECALHO_POR_MODO.planilha;
 
   useEffect(() => {
     /* CA3: para quem não é superadministradora, nem a requisição acontece. */
@@ -214,13 +232,10 @@ export default function LinksLideresCard() {
   if (!ehSuperadmin) return null;
 
   return (
-    <div data-testid="links-lideres" className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+    <div data-testid={cabecalho.testId} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
       <div className="mb-4">
-        <h2 className="font-bold text-[#1E1E1E] text-lg">Cadastro nacional de líderes</h2>
-        <p className="text-xs text-[#1E1E1E]/50 mt-1">
-          Os líderes se cadastram pelo formulário externo e as respostas vão para a planilha.
-          Publicar um diretor no site continua sendo feito por você, em Diretores &amp; Líderes.
-        </p>
+        <h2 className="font-bold text-[#1E1E1E] text-lg">{cabecalho.titulo}</h2>
+        <p className="text-xs text-[#1E1E1E]/50 mt-1">{cabecalho.descricao}</p>
       </div>
 
       {loading ? (
@@ -230,16 +245,7 @@ export default function LinksLideresCard() {
           {erro}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {CARDS.map((card) => (
-            <LinkFixado
-              key={card.campo}
-              card={card}
-              valor={links[card.campo]}
-              onSalvar={salvar}
-            />
-          ))}
-        </div>
+        <LinkFixado card={card} valor={links[card.campo]} onSalvar={salvar} />
       )}
     </div>
   );

@@ -3,11 +3,10 @@ import { api } from "../api";
 /**
  * Links fixados na página inicial do painel (US10).
  *
- * As duas rotas são exclusivas da superadministradora — **inclusive a
- * leitura**. A planilha reúne nome, e-mail e WhatsApp de mais de 2500 líderes,
- * e o back-end recusa com 403 qualquer outro papel. Por isso a tela só chama
- * estas funções quando `ehSuperadmin`: para o administrador de setor, o certo
- * é não pedir.
+ * GET/PUT /painel/links são exclusivas da superadministradora — inclusive a
+ * leitura — porque a planilha reúne nome, e-mail e WhatsApp de mais de 2500
+ * líderes. Já GET /painel/link-cadastro-lideres é pública e devolve apenas o
+ * endereço do formulário externo exibido na área pública do site.
  */
 
 /**
@@ -15,6 +14,17 @@ import { api } from "../api";
  * @property {string|null} link_cadastro_lideres - formulário externo de cadastro
  * @property {string|null} link_planilha_lideres - planilha com as respostas
  */
+
+/**
+ * GET /painel/link-cadastro-lideres (público).
+ * Retorna apenas o formulário de cadastro, sem expor a planilha de respostas.
+ *
+ * @returns {Promise<{ link_cadastro_lideres: string|null }>}
+ */
+export async function obterLinkCadastroLideres() {
+  const { data } = await api.get("/painel/link-cadastro-lideres");
+  return data;
+}
 
 /**
  * GET /painel/links (superadmin)
