@@ -35,6 +35,17 @@ HEADLESS=0 PAUSA_S=0.8 .venv/bin/pytest -m us19   # devagar, para apresentar
 ./ambiente/descer.sh
 ```
 
+No Windows, o runner PowerShell prepara o ambiente virtual se necessário,
+sobe os serviços e o front em portas livres, executa o teste e encerra apenas
+os serviços que ele iniciou:
+
+```powershell
+Set-Location selenium
+powershell -ExecutionPolicy Bypass -File .\run_test.ps1
+# Outro teste:
+powershell -ExecutionPolicy Bypass -File .\run_test.ps1 -TestPath testes\test_us19_modalidade.py
+```
+
 O ambiente não lê nem altera o `.env` de ninguém: as variáveis estão em
 `ambiente/docker-compose.yml`, e o banco é temporário (some no `descer.sh`).
 O `preparar_keycloak.py` cria um usuário por perfil, todos com a senha
@@ -58,7 +69,7 @@ Quando um teste falha, o print da tela fica em `selenium/relatorio/`.
 | US20 | `test_us20_exclusao_evento.py` | Modal com a programação e os convidados que saem junto; exclusão mantém o cadastro do convidado; "Não" mantém o evento; admin de eventos sem lixeira; servidor recusa |
 | US22 | `test_us22_missao_visao_valores.py` | "Saiba mais" e rodapé levam a Quem somos; missão publicada sem texto inventado; tela só da superadmin; aviso ao salvar; **lacuna**: conteúdo salvo não chega à página (xfail) |
 | US23 | `test_us23_calendario.py` | Evento do mês passado com "Já aconteceu"; "Ver fotos" leva ao evento; evento futuro sem a etiqueta |
-| — | `test_bugs_encontrados.py` | Defeitos fora das histórias do Trio 01 (xfail) |
+| — | `test_bugs_encontrados.py` | Regressão: excluir convidado vinculado mostra aviso claro sem quebrar a tela |
 | — | `test_entrega_do_build.py` | O que o servidor entrega: fallback da SPA em rota profunda, 404 da aplicação, navegação sem recarregar, guarda do painel com navegador limpo, `lang` e viewport do `index.html`; **achado**: a rota `/test-coverage` vai para produção expondo cinco serviços em `window` (xfail) |
 | — | `test_producao.py` | O que está publicado: Keycloak do realm no ar, CORS da API, migrações da Sprint 3 no banco de produção, eventos saindo da API até a tela, o card de compartilhamento por evento servido ao robô de prévia (US08), a guarda dos links do painel e o login real |
 
@@ -103,7 +114,6 @@ segundas.
 |---|---|---|
 | Os campos vagas, contato, valor, link de pagamento e regulamento são preenchidos no painel e somem ao salvar: o front não os envia e o back-end não tem as colunas | US02, front e back | `test_us02_…::test_campos_preenchidos_continuam_salvos_ao_reabrir_o_evento` |
 | O back-end não tem `GET`/`PUT /institucional`: missão, visão e valores não podem ser salvos | US22, back | `test_us22_…::test_conteudo_salvo_no_painel_aparece_na_pagina_publica` |
-| Excluir um convidado vinculado a um evento estoura `IntegrityError` no back-end; a requisição cai sem resposta e a tela mostra erro de rede (registrado pela QA na Sprint 2, ainda aberto) | US06, back | `test_bugs_encontrados.py` |
 
 ## Limites do ambiente local
 
