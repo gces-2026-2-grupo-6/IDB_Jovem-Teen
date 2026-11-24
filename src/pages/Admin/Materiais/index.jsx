@@ -27,14 +27,26 @@ const ICONE_DO_TIPO = {
 
 function MaterialRow({ material, onEdit, onDelete }) {
   const Icone = ICONE_DO_TIPO[material.type] || FileText;
+  const [failedPreview, setFailedPreview] = useState("");
+  const showPreview = Boolean(material.previewUrl) && failedPreview !== material.previewUrl;
 
   return (
     <div
       data-testid="material-row"
       className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 px-2 rounded-lg transition-colors"
     >
-      <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#FFD9B3] text-[#8A3816] shrink-0">
-        <Icone size={18} />
+      <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#FFD9B3] text-[#8A3816] shrink-0 overflow-hidden">
+        {showPreview ? (
+          <img
+            src={material.previewUrl}
+            alt={`Prévia de ${material.title}`}
+            loading="lazy"
+            onError={() => setFailedPreview(material.previewUrl)}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Icone size={18} aria-hidden="true" />
+        )}
       </div>
 
       <div className="flex-1 min-w-0">

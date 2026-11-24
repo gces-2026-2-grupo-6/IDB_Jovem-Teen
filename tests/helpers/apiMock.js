@@ -156,7 +156,9 @@ function makeSeed() {
         descricao: "Versão para impressão",
         tipo: "documento",
         link: "https://drive.google.com/file/d/manual/view",
+        link_preview: null,
         url_download: "http://api.test/drive/download/manual",
+        url_preview: "http://api.test/drive/miniatura/manual",
         criado_em: "2026-10-26T19:18:29Z",
       },
       {
@@ -167,7 +169,9 @@ function makeSeed() {
         /* Link externo: `url_download` é o próprio link, e aí o certo é abrir
            em nova aba em vez de baixar. */
         link: "https://youtube.com/watch?v=abc",
+        link_preview: null,
         url_download: "https://youtube.com/watch?v=abc",
+        url_preview: "https://img.youtube.com/vi/abc/hqdefault.jpg",
         criado_em: "2026-10-20T10:00:00Z",
       },
       {
@@ -176,7 +180,9 @@ function makeSeed() {
         descricao: null,
         tipo: "foto",
         link: "https://drive.google.com/file/d/diretoria/view",
+        link_preview: null,
         url_download: "http://api.test/drive/download/diretoria",
+        url_preview: "http://api.test/drive/imagem/diretoria",
         criado_em: "2026-10-18T10:00:00Z",
       },
     ],
@@ -358,7 +364,7 @@ export async function setupApiMock(page, { evento } = {}) {
 
   /* Imagens e tiles externos → devolve um pixel para não travar o load */
   await page.route(
-    /(via\.placeholder\.com|tile\.openstreetmap\.org|lh3\.googleusercontent\.com|unpkg\.com)/,
+    /(via\.placeholder\.com|tile\.openstreetmap\.org|lh3\.googleusercontent\.com|unpkg\.com|img\.youtube\.com|\/drive\/(imagem|miniatura)\/)/,
     (route) =>
       route.fulfill({ status: 200, contentType: "image/png", body: TRANSPARENT_PNG })
   );
@@ -855,11 +861,14 @@ export async function setupApiMock(page, { evento } = {}) {
         }
         if (method === "PUT") {
           if (idx === -1) return route.fulfill(notFound());
+          const linkPreview = body.link_preview ?? db.materiais[idx].link_preview ?? null;
           db.materiais[idx] = {
             ...db.materiais[idx],
             ...body,
             material_id: materialId,
+            link_preview: linkPreview,
             url_download: body.link || db.materiais[idx].link,
+            url_preview: linkPreview || db.materiais[idx].url_preview || null,
           };
           return route.fulfill(json(db.materiais[idx]));
         }
@@ -885,7 +894,9 @@ export async function setupApiMock(page, { evento } = {}) {
             descricao: body.descricao ?? null,
             tipo: body.tipo,
             link: body.link,
+            link_preview: body.link_preview ?? null,
             url_download: body.link,
+            url_preview: body.link_preview || "http://api.test/drive/miniatura/novo",
             criado_em: new Date().toISOString(),
           };
           /* A lista vem do mais novo para o mais antigo. */
