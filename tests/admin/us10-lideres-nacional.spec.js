@@ -5,7 +5,7 @@ import { loginAsAdmin, loginComPapeis } from '../helpers/adminAuth';
 /* US10 — Cadastro nacional de líderes.
  *
  * O cadastro dos mais de 2500 líderes acontece fora do site: cada líder se
- * inscreve pelo formulário externo exposto na área pública (Nosso Organograma)
+ * inscreve pelo formulário externo exposto em destaque no cabeçalho do site
  * e as respostas caem numa planilha fixada na home do painel.
  *
  * No mock: o link de cadastro já está configurado; o da planilha, ainda não.
@@ -14,16 +14,21 @@ import { loginAsAdmin, loginComPapeis } from '../helpers/adminAuth';
 const CARD = 'Cadastro nacional de líderes';
 
 test.describe('US10 - Link de cadastro na área pública e planilha no painel', () => {
-  test('área pública exibe o botão de cadastro de líderes sem exigir login', async ({ page }) => {
+  test('área pública exibe o botão de cadastro de líderes no cabeçalho sem exigir login', async ({ page, isMobile }) => {
     await setupApiMock(page);
 
     await page.goto('/');
 
-    const botao = page.getByTestId('link-cadastro-lideres-publico');
-    await expect(botao).toBeVisible();
-    await expect(botao).toHaveText(/Cadastrar-se como líder/);
-    await expect(botao).toHaveAttribute('href', 'https://forms.gle/cadastro-lideres');
-    await expect(botao).toHaveAttribute('target', '_blank');
+    /* O botão não fica mais dentro de Nosso Organograma. */
+    await expect(page.locator('main').getByTestId('link-cadastro-lideres-publico')).toHaveCount(0);
+
+    if (!isMobile) {
+      const botao = page.locator('header').getByTestId('link-cadastro-lideres-publico');
+      await expect(botao).toBeVisible();
+      await expect(botao).toHaveText(/Cadastro de líderes nacionais/);
+      await expect(botao).toHaveAttribute('href', 'https://forms.gle/cadastro-lideres');
+      await expect(botao).toHaveAttribute('target', '_blank');
+    }
   });
 
   test('home do painel exibe apenas a planilha de respostas (sem o bloco de cadastro)', async ({ page }) => {
@@ -88,7 +93,7 @@ test.describe('US10 - Link de cadastro na área pública e planilha no painel', 
     expect(pedidos).toEqual([]);
   });
 
-  test('CA4: configurar a planilha na home não apaga o link público de cadastro', async ({ page }) => {
+  test('CA4: configurar a planilha na home não apaga o link público de cadastro', async ({ page, isMobile }) => {
     await setupApiMock(page);
     await loginAsAdmin(page);
 
@@ -104,12 +109,14 @@ test.describe('US10 - Link de cadastro na área pública e planilha no painel', 
 
     await expect(planilha.getByText('https://docs.google.com/spreadsheets/d/respostas')).toBeVisible();
 
-    /* O link público de cadastro continua intacto na área pública. */
+    /* O link público de cadastro continua intacto no cabeçalho da área pública. */
     await page.goto('/');
-    await expect(page.getByTestId('link-cadastro-lideres-publico')).toHaveAttribute(
-      'href',
-      'https://forms.gle/cadastro-lideres'
-    );
+    if (!isMobile) {
+      await expect(page.locator('header').getByTestId('link-cadastro-lideres-publico')).toHaveAttribute(
+        'href',
+        'https://forms.gle/cadastro-lideres'
+      );
+    }
   });
 
   test('link sem https:// é recusado antes de chegar ao servidor', async ({ page }) => {
@@ -144,7 +151,7 @@ test.describe('US10 - Link de cadastro na área pública e planilha no painel', 
     await expect(cadastro.getByRole('button', { name: 'Configurar' })).toBeVisible();
 
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /Nosso Organograma/i })).toBeVisible();
+    await expect(page.locator('header')).toBeVisible();
     await expect(page.getByTestId('link-cadastro-lideres-publico')).toHaveCount(0);
   });
 });
